@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "NodePage.h"
 
 struct NodePage {
     int id;
@@ -11,3 +12,8 @@ struct NodePage {
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;
 };
+
+
+NodePage * createNodePage() {
+
+}
