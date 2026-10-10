@@ -5,6 +5,6 @@
 
 struct NodeProcess {
     int id;
-    struct NodePage * pages;
+    struct NodePage ** pages;
     int pageSize;
 };
