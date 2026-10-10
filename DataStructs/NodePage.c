@@ -8,6 +8,6 @@ struct NodePage {
     int L_Address;
     int M_Address;
     int D_Address;
-    int mark;
-
+    struct NodePage * nextPtr;
+    struct NodePage * pastPtr;
 };
