@@ -29,3 +29,17 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
 
     return nodePage;
 }
+
+
+//Puts
+void putNextPtr(NodePage * self, NodePage * nextPtr) {
+    if(self != NULL) {
+        self->nextPtr = nextPtr;
+    }
+}
+
+void putPastPtr(NodePage * self, NodePage * pastPtr) {
+    if(self != NULL) {
+        self->pastPtr = pastPtr;
+    }
+}
