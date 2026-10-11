@@ -43,10 +43,14 @@ int main() {
   NodePage * page1 = createNodePage(101, 1, 1, 10, 20, 30, L_addr,NULL, NULL);
   NodePage * page2 = createNodePage(102, 1, 1, 40, 50, 60, L_addr, NULL, NULL);
   NodePage * page3 = createNodePage(103, 1, 1, 70, 80, 90, L_addr, NULL, NULL);
-  addNodePageToProcess(nodeProcess2, 101, 1, 1, 10, 20, 30, L_addr); //pageId, parentId, loaded, L_Addr, M_Addr, D_addr
+  append(linkedList2, 101, 1, 1, 10, 20, 30, L_addr); //pageId, parentId, loaded, L_Addr, M_Addr, D_addr
   DLinkedList * combined = combineDLinkedList(linkedList, linkedList2);
   printf("\nCombined:\n");
   printDLinkedList(combined);
+  goToStart(combined);
+  removeNode(combined);
+  printDLinkedList(combined);
+
 
 
   destroyNodePage(nodePage);

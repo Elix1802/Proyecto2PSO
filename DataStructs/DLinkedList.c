@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "NodePage.h"
 #include "DLinkedList.h"
@@ -108,10 +109,13 @@ int getSize(DLinkedList* list) {
 
 void printDLinkedList(DLinkedList* list) {
     NodePage* currentNode = getNextPtr(list->head);
-    //while (currentNode != list->tail) {
-        printNodePage(currentNode);
+    while (currentNode != list->tail) {
+        if(currentNode->id >= 0) {
+            printNodePage(currentNode);
+        }
         currentNode = getNextPtr(currentNode);
-    //}
+
+    }
 }
 
 void clearDLinkedList(DLinkedList* list){
@@ -130,6 +134,8 @@ DLinkedList * combineDLinkedList(DLinkedList * list1, DLinkedList * list2) {
         return NULL; 
     }
     list->current = list->head = list1->head;
+    putNextPtr(list1->tail, list2->head);
+    putPastPtr(list2->head, list1->tail);
     list->tail = list2->tail;
     list->size = list1->size + list2->size;
     return list;
