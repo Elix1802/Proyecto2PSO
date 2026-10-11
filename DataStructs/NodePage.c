@@ -14,7 +14,7 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     nodePage->M_Address = M_Addr;
     nodePage->D_Address = D_addr;
     nodePage->loaded_T = loaded_T;
-    nodePage->Mark = -1;
+    nodePage->Mark = 0;
     nodePage->nextPtr = nextPtr;
     nodePage->pastPtr = pastPtr;
 

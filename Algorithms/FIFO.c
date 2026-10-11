@@ -11,23 +11,25 @@ void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, int diskLo
         return;
     }
 
-    int highestTime = -10;
-    NodePage * oldestNode;
+    int lowestId = currentNode->id;
+    NodePage * oldestNode = currentNode;
 
     while (currentNode != linkedList->tail) {
         if(currentNode->id >= 0) {
-            if(currentNode->loaded_T > highestTime) {
-                highestTime = currentNode->loaded_T;
+            if(currentNode->id < lowestId) {
+                lowestId = currentNode->id;
                 oldestNode = currentNode;
             }
         }
         currentNode = getNextPtr(currentNode);
     }
 
-
     nodePage->pastPtr = oldestNode->pastPtr;
+
     nodePage->nextPtr = oldestNode->nextPtr;
+
     oldestNode->pastPtr->nextPtr = nodePage;
+
     oldestNode->nextPtr->pastPtr = nodePage;
 
     putOnVirtualMemory(oldestNode, diskLocation);
