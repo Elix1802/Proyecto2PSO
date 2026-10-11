@@ -102,3 +102,20 @@ void destroyMMU(MMU * self) {
     destroyDLinkedList(self->pageTable);
     free(self);
 }
+
+
+int newP(MMU * self, int pid, int size){
+
+}
+
+void useP(MMU * self, int ptr){
+
+}
+
+void deleteP(MMU * self, int ptr){
+
+}
+
+void killP(MMU * self, int pid){
+
+}

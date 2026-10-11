@@ -18,4 +18,10 @@ void destroyMMU(MMU * self);
 int addProcess(MMU * self, int processId);
 NodePage ** getPages(MMU * self, int processId, int * count);
 
+//Posibles Instrucciones
+int newP(MMU * self, int pid, int size);
+void useP(MMU * self, int ptr);
+void deleteP(MMU * self, int ptr);
+void killP(MMU * self, int pid);
+
 #endif // MMU_H
