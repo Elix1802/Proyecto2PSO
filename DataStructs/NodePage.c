@@ -30,6 +30,21 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     return nodePage;
 }
 
+void destroyNodePage(NodePage * self) {
+    if(self != NULL) free(self);
+}
+ 
+//gets
+NodePage * getNextPtr(NodePage * self) {
+    if(self != NULL) {
+        return self->nextPtr;
+    }
+}
+NodePage * getPastPtr(NodePage * self) {
+    if(self != NULL) {
+        return self->pastPtr;
+    }
+}
 
 //Puts
 void putNextPtr(NodePage * self, NodePage * nextPtr) {
@@ -43,3 +58,4 @@ void putPastPtr(NodePage * self, NodePage * pastPtr) {
         self->pastPtr = pastPtr;
     }
 }
+

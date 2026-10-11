@@ -8,5 +8,4 @@ NodeProcess * createNodePage();
 void destroyNodePage(NodeProcess * self);
 
 
-
 #endif
