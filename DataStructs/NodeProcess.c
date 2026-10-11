@@ -10,7 +10,7 @@ struct NodeProcess {
     int pageSize;
 };
 
-NodeProcess * createNodePage(int pid) {
+NodeProcess * createNodeProcess(int pid) {
     NodeProcess * nodeProcess = (NodeProcess*) malloc(sizeof(NodeProcess));
     if(nodeProcess==NULL) return NULL;
     nodeProcess->id = pid;
@@ -24,4 +24,10 @@ NodeProcess * createNodePage(int pid) {
     }
 
     return nodeProcess;
+}
+
+void destroyNodeProcess(NodeProcess * self) {
+    if(self != NULL) {
+        
+    }
 }

@@ -1,7 +1,5 @@
 #include "NodeProcess.h"
-#include "NodeProcess.c"
 #include "NodePage.h"
-#include "NodePage.c"
 
 struct MMU {
   int availableMemory;

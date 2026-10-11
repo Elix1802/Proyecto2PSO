@@ -3,9 +3,9 @@
 
 typedef struct NodeProcess NodeProcess;
 
-NodeProcess * createNodePage(int pid);
+NodeProcess * createNodeProcess(int pid);
 
-void destroyNodePage(NodeProcess * self);
+void destroyNodeProcess(NodeProcess * self);
 
 
 #endif
