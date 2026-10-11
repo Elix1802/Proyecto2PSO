@@ -15,13 +15,14 @@ DLinkedList* createDLinkedList() {
     if (list == NULL) {
         return NULL; 
     }
-    list->current = list->head =createNodePage(NULL, NULL, 0, 0, 0, 0, NULL, NULL);
-    NodePage* lastNode = createNodePage(NULL, NULL, 0, 0, 0, 0, NULL, list->head);
+    list->current = list->head =createNodePage(-1, 0, 0, 0, 0, 0, NULL, NULL);
+    NodePage* lastNode = createNodePage(-2, 0, 0, 0, 0, 0, NULL, list->head);
     list->tail = lastNode;
     putNextPtr(list->head, lastNode);
     list->size = 0;
     return list;
 }
+
 
 NodePage* getElement(DLinkedList* list) {
     if (getNextPtr(list->current) == list->tail || list->size == 0) {
