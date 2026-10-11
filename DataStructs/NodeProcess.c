@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include "NodePage.h"
 #include "NodeProcess.h"
-#define ARRAY_SIZE 1024
+#include "DLinkedList.h"
+
 
 struct NodeProcess {
     int id;
-    struct NodePage ** pages;
+    struct DLinkedList * pages;
     int pageSize;
 };
 
@@ -16,18 +17,22 @@ NodeProcess * createNodeProcess(int pid) {
     nodeProcess->id = pid;
     nodeProcess->pageSize = 4;
 
-    nodeProcess->pages = (NodePage**) malloc(ARRAY_SIZE*sizeof(NodePage*));
-    if(nodeProcess->pages == NULL) return NULL;
-
-    for(int i=0; i<ARRAY_SIZE; i++) {
-        nodeProcess->pages[i] = NULL;
-    }
+    nodeProcess->pages = createDLinkedList();
 
     return nodeProcess;
 }
 
-void destroyNodeProcess(NodeProcess * self) {
+//add
+void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr){
     if(self != NULL) {
-        
+        append(self->pages, pageId, parentId, loaded, L_Addr, M_Addr, D_addr);
     }
 }
+
+void destroyNodeProcess(NodeProcess * self) {
+    if(self != NULL) {
+        free(self);
+    }
+}
+
+
