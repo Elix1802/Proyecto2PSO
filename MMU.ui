@@ -59,16 +59,16 @@
             <property name="margin-bottom">2</property>
             <property name="spacing">16</property>
             <child>
-              <object class="GtkLabel" id="lblDirectory">
-                <property name="label">No file selected</property>
-              </object>
-            </child>
-            <child>
               <object class="GtkButton" id="btnOpenFile">
                 <property name="label">📁 Select File</property>
                 <style>
                   <class name="btnOpenFile"/>
                 </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="lblDirectory">
+                <property name="label">No file selected</property>
               </object>
             </child>
           </object>
