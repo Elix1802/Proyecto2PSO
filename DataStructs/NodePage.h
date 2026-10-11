@@ -1,6 +1,17 @@
 #ifndef NODEPAGE_H
 #define NODEPAGE_H
 
+struct NodePage {
+    int id;
+    int parentId;
+    int loaded; //1 if process is in RAM otherwise 0
+    int L_Address;
+    int M_Address;
+    int D_Address;
+    struct NodePage * nextPtr;
+    struct NodePage * pastPtr;
+};
+
 typedef struct NodePage NodePage;
 
 NodePage * createNodePage();

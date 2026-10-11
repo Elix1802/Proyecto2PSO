@@ -2,17 +2,6 @@
 #include <stdlib.h>
 #include "NodePage.h"
 
-struct NodePage {
-    int id;
-    int parentId;
-    int loaded; //1 if process is in RAM otherwise 0
-    int L_Address;
-    int M_Address;
-    int D_Address;
-    struct NodePage * nextPtr;
-    struct NodePage * pastPtr;
-};
-
 
 NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, NodePage * nextPtr, NodePage * pastPtr) {
     NodePage * nodePage = (NodePage*) malloc(sizeof(NodePage));

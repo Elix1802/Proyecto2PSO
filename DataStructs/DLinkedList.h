@@ -1,5 +1,7 @@
 #ifndef DLINKEDLIST_H
 #define DLINKEDLIST_H
+#include "NodePage.h"
+
 
 typedef struct DLinkedList DLinkedList;
 

@@ -9,9 +9,6 @@ struct MMU {
   struct nodeProcess * processes;
 };
 
-struct NodePage* getPages(struct MMU * self){
 
-
-};
 
 
