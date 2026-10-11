@@ -3,7 +3,7 @@
 #include "NodePage.h"
 
 
-NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, NodePage * nextPtr, NodePage * pastPtr) {
+NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T, NodePage * nextPtr, NodePage * pastPtr) {
     NodePage * nodePage = (NodePage*) malloc(sizeof(NodePage));
     if (nodePage == NULL) return NULL;
     
@@ -13,6 +13,8 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     nodePage->L_Address = L_Addr;
     nodePage->M_Address = M_Addr;
     nodePage->D_Address = D_addr;
+    nodePage->loaded_T = loaded_T;
+    nodePage->Mark = -1;
     nodePage->nextPtr = nextPtr;
     nodePage->pastPtr = pastPtr;
 
@@ -48,13 +50,24 @@ void putPastPtr(NodePage * self, NodePage * pastPtr) {
     }
 }
 
+void putOnVirtualMemory(NodePage * self, int D_addr) {
+    if(self != NULL) {
+        self->D_Address = D_addr;
+        self->loaded = 0;
+    }
+}
 
+void addTimeOnNodePage(NodePage * self, int time) {
+    if(self!=NULL) {
+        self->loaded_T++;
+    }
+}
 //print
 void printNodePage(NodePage * self) {
     if(self != NULL) {
         int pastNodePageId = (self->pastPtr != NULL) ? self->pastPtr->id : -1;
         int nextNodePageId = (self->nextPtr != NULL) ? self->nextPtr->id : -1;
-        printf("\npageId: %d ; parentId: %d ; loaded: %d ; L_Address: %d ; M_Address: %d ; D_Address: %d ; pastNodePageId : %d ; nextNodePageId : %d \n", self->id, self->parentId, self->loaded, self->L_Address, self->M_Address, self->D_Address, pastNodePageId, nextNodePageId);
+        printf("\npageId: %d ; parentId: %d ; loaded: %d ; L_Address: %d ; M_Address: %d ; D_Address: %d; loaded_T: %d ; pastNodePageId : %d ; nextNodePageId : %d \n", self->id, self->parentId, self->loaded, self->L_Address, self->M_Address, self->D_Address, self->loaded_T, pastNodePageId, nextNodePageId);
         return;
     }
     

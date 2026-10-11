@@ -114,10 +114,34 @@ NodePage ** getAllLogicalAddressPages(NodeProcess * self, int L_Addr, int size) 
     return NULL;
 }
 
-//add
-void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr){
+/**
+ * Función que retorna -1, si hubo un error, 1 si borró al menos una página y 0 si no borro nada
+ */
+int deleteAllLogicalAddressPages(NodeProcess * self, int L_Addr) {
     if(self != NULL) {
-        append(self->pages, pageId, parentId, loaded, L_Addr, M_Addr, D_addr);
+        goToStart(self->pages);
+        int i = 0;
+        while(!atEnd(self->pages)){
+            NodePage * actualPage = getElement(self->pages);
+            if(actualPage->L_Address == L_Addr) {
+                i++;
+                destroyNodePage(removeNode(self->pages));
+            }
+            else {
+                nextNodePage(self->pages);
+            }
+        }
+
+        return (i>0) ? 1 : 0;
+    }
+
+    return -1;
+}
+
+//add
+void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T){
+    if(self != NULL) {
+        append(self->pages, pageId, parentId, loaded, L_Addr, M_Addr, D_addr, loaded_T);
         self->pagesNumber++;
     }
 

@@ -3,21 +3,21 @@
 #include "NodePage.h"
 #include "DLinkedList.h"
 
-
 struct DLinkedList {
-    NodePage* head;
-    NodePage* tail;
-    NodePage* current;
+    NodePage * head;
+    NodePage * tail;
+    NodePage * current;
     int size;
 };
+
 
 DLinkedList* createDLinkedList() {
     DLinkedList* list = (DLinkedList*)malloc(sizeof(DLinkedList));
     if (list == NULL) {
         return NULL; 
     }
-    list->current = list->head =createNodePage(-1, 0, 0, 0, 0, 0, NULL, NULL);
-    NodePage* lastNode = createNodePage(-2, 0, 0, 0, 0, 0, NULL, list->head);
+    list->current = list->head =createNodePage(-1, 0, 0, 0, 0, 0,-1, NULL, NULL);
+    NodePage* lastNode = createNodePage(-2, 0, 0, 0, 0, 0, -1,NULL, list->head);
     list->tail = lastNode;
     putNextPtr(list->head, lastNode);
     list->size = 0;
@@ -41,8 +41,8 @@ NodePage* getElement(DLinkedList* list) {
     return getNextPtr(list->current);
 }
 
-void insert(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr) {
-    NodePage* newNode = createNodePage(pageId, parentId, loaded, L_Addr, M_Addr, D_addr, getNextPtr(list->current), list->current);
+void insert(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_t) {
+    NodePage* newNode = createNodePage(pageId, parentId, loaded, L_Addr, M_Addr, D_addr, loaded_t,getNextPtr(list->current), list->current);
     NodePage* nextNode = getNextPtr(list->current);
     putNextPtr(list->current, newNode);
     putPastPtr(nextNode, newNode);
@@ -50,8 +50,8 @@ void insert(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr,
     list->size++;
 }
 
-void append(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr) {
-    NodePage* newNode = createNodePage(pageId, parentId, loaded, L_Addr, M_Addr, D_addr, list->tail, getPastPtr(list->tail));
+void append(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_t) {
+    NodePage* newNode = createNodePage(pageId, parentId, loaded, L_Addr, M_Addr, D_addr, loaded_t, list->tail, getPastPtr(list->tail));
     NodePage* lastNode = getPastPtr(list->tail);
     putNextPtr(lastNode, newNode);
     putPastPtr(list->tail, newNode);

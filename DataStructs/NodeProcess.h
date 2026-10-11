@@ -15,9 +15,9 @@ NodePage ** getAllProcessPages(NodeProcess * self);
 int getNumberPages(NodeProcess * self);
 int getNumberLogicalAddressPages(NodeProcess * self, int L_Addr);
 NodePage ** getAllLogicalAddressPages(NodeProcess * self, int L_Addr, int size);
-
+int deleteAllLogicalAddressPages(NodeProcess * self, int L_Addr);
 
 //add
-void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr);
+void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T);
 
 #endif
