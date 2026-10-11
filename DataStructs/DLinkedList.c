@@ -24,6 +24,7 @@ DLinkedList* createDLinkedList() {
     return list;
 }
 
+
 void destroyDLinkedList(DLinkedList* list) {
     if (list != NULL) {
         clearDLinkedList(list);
@@ -107,10 +108,10 @@ int getSize(DLinkedList* list) {
 
 void printDLinkedList(DLinkedList* list) {
     NodePage* currentNode = getNextPtr(list->head);
-    while (currentNode != list->tail) {
+    //while (currentNode != list->tail) {
         printNodePage(currentNode);
         currentNode = getNextPtr(currentNode);
-    }
+    //}
 }
 
 void clearDLinkedList(DLinkedList* list){
@@ -121,4 +122,15 @@ void clearDLinkedList(DLinkedList* list){
     list->current = list->head;
     putPastPtr(list->tail, list->head);
     list->size = 0;
+}
+
+DLinkedList * combineDLinkedList(DLinkedList * list1, DLinkedList * list2) {
+    DLinkedList* list = (DLinkedList*)malloc(sizeof(DLinkedList));
+    if (list == NULL) {
+        return NULL; 
+    }
+    list->current = list->head = list1->head;
+    list->tail = list2->tail;
+    list->size = list1->size + list2->size;
+    return list;
 }

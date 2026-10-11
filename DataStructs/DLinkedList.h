@@ -21,5 +21,6 @@ int getSize(DLinkedList* list);
 void printDLinkedList(DLinkedList* list);
 void clearDLinkedList(DLinkedList* list);
 
+DLinkedList * combineDLinkedList(DLinkedList * list1, DLinkedList * list2);
 #endif
 

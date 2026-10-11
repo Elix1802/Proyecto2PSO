@@ -3,6 +3,13 @@
 #include "NodePage.h"
 #include "DLinkedList.h"
 
+struct NodeProcess {
+    int id;
+    struct DLinkedList * pages;
+    int pageSize;
+    int pagesNumber;
+};
+
 typedef struct NodeProcess NodeProcess;
 
 NodeProcess * createNodeProcess(int pid);

@@ -5,12 +5,7 @@
 #include "DLinkedList.h"
 
 
-struct NodeProcess {
-    int id;
-    struct DLinkedList * pages;
-    int pageSize;
-    int pagesNumber;
-};
+
 
 NodeProcess * createNodeProcess(int pid) {
     NodeProcess * nodeProcess = (NodeProcess*) malloc(sizeof(NodeProcess));
@@ -126,6 +121,7 @@ int deleteAllLogicalAddressPages(NodeProcess * self, int L_Addr) {
             if(actualPage->L_Address == L_Addr) {
                 i++;
                 destroyNodePage(removeNode(self->pages));
+                self->pagesNumber--;
             }
             else {
                 nextNodePage(self->pages);
