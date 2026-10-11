@@ -1,0 +1,155 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.94.1 -->
+<interface>
+  <!-- interface-name mmu.ui -->
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkApplicationWindow" id="mainWindow">
+    <property name="default-height">750</property>
+    <property name="default-width">1100</property>
+    <property name="title">MMU</property>
+    <child>
+      <object class="GtkBox">
+        <property name="margin-bottom">15</property>
+        <property name="margin-end">15</property>
+        <property name="margin-start">15</property>
+        <property name="margin-top">15</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="spacing">16</property>
+            <child>
+              <object class="GtkLabel" id="lblDirectory_2">
+                <property name="label">Random Seed: </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkText" id="txtSeed"/>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="spacing">16</property>
+            <child>
+              <object class="GtkLabel" id="lblDirectory_3">
+                <property name="label">Algorithm: </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDropDown" id="cmbAlgorithm">
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item>FIFO</item>
+                      <item>Second Chance</item>
+                      <item>LRU</item>
+                      <item>LFU</item>
+                    </items>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="spacing">16</property>
+            <child>
+              <object class="GtkLabel" id="lblDirectory">
+                <property name="label">No file selected</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnOpenFile">
+                <property name="label">📁 Select File</property>
+                <style>
+                  <class name="btnOpenFile"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator"/>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">4</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="halign">start</property>
+                <property name="label">RAM - OPT</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDrawingArea" id="ramOptArea">
+                <property name="height-request">30</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">4</property>
+            <child>
+              <object class="GtkLabel" id="lblAlgName">
+                <property name="halign">start</property>
+                <property name="label">RAM - [???]</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDrawingArea" id="ramAlgArea">
+                <property name="height-request">30</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator"/>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="homogeneous">true</property>
+            <property name="orientation">horizontal</property>
+            <property name="spacing">20</property>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="min-content-height">200</property>
+                <property name="vexpand">true</property>
+                <child>
+                  <object class="GtkLabel"/>
+                </child>
+                <child>
+                  <object class="GtkColumnView" id="mmuOptView"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="min-content-height">200</property>
+                <property name="vexpand">true</property>
+                <child>
+                  <object class="GtkColumnView" id="mmuAlgView"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkGrid">
+            <property name="column-spacing">10</property>
+            <property name="row-spacing">6</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
