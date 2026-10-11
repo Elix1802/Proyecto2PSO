@@ -3,7 +3,7 @@
 
 typedef struct NodeProcess NodeProcess;
 
-NodeProcess * createNodePage();
+NodeProcess * createNodePage(int pid);
 
 void destroyNodePage(NodeProcess * self);
 
