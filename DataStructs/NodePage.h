@@ -15,6 +15,6 @@ NodePage * getPastPtr(NodePage * self);
 void putNextPtr(NodePage * self, NodePage * nextPtr);
 void putPastPtr(NodePage * self, NodePage * pastPtr);
 
-
-
+//print
+void printNodePage(NodePage * self);
 #endif

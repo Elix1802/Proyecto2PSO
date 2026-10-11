@@ -4,7 +4,8 @@
 
 int main() {
   NodePage * nodePage = createNodePage(1, 1, 1, 1, 1, 1, NULL, NULL);
-destroyNodePage(nodePage);
+  printNodePage(nodePage);
+  destroyNodePage(nodePage);
   printf("Hola amigo!\n");
   return 0;
 }

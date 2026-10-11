@@ -59,3 +59,16 @@ void putPastPtr(NodePage * self, NodePage * pastPtr) {
     }
 }
 
+
+//print
+void printNodePage(NodePage * self) {
+    if(self != NULL) {
+        int pastNodePageId = (self->pastPtr != NULL) ? self->pastPtr->id : -1;
+        int nextNodePageId = (self->nextPtr != NULL) ? self->nextPtr->id : -1;
+        printf("\npageId: %d ; parentId: %d ; loaded: %d ; L_Address: %d ; M_Address: %d ; D_Address: %d ; pastNodePageId : %d ; nextNodePageId : %d \n", self->id, self->parentId, self->loaded, self->L_Address, self->M_Address, self->D_Address, pastNodePageId, nextNodePageId);
+        return;
+    }
+    
+    printf("No page found");
+    
+}
