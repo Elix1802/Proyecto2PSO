@@ -43,7 +43,12 @@ void destroyProcessTable(ProcessTable * self) {
     if(self != NULL) {
         for (int i = 0; i < DIC_SIZE; i++) {
             KeyValueP * currentKv = self->values[i];
-            destroyNodeProcess(currentKv->value);
+            while (currentKv != NULL) {
+                KeyValueP * nextKv = currentKv->next;
+                destroyNodeProcess(currentKv->value);
+                free(currentKv);
+                currentKv = nextKv;
+            }
         }
         free(self->values);
         free(self);
@@ -57,62 +62,23 @@ int addProcessTableElement(ProcessTable * self, int key, NodeProcess * newNode){
     int index = hashFunctionP(key);
 
     KeyValueP * currentKv = self->values[index];
-
-    int i = index;
-    
     while(currentKv != NULL) {
         if(currentKv->key == key) {
             return 0;
         }
-
-        if(i >= DIC_SIZE) {
-            int lastSize = DIC_SIZE;
-            DIC_SIZE*=2;
-            KeyValueP ** temp = (KeyValueP**) malloc(DIC_SIZE * sizeof(KeyValueP*));
-            for(int j = 0; j<DIC_SIZE; j++) {   
-                temp[j] = NULL;
-            }
-
-            for(int j = 0; j<lastSize; j++) {
-                int newIndex = hashFunctionP(self->values[j]->key);
-                temp[newIndex] =  *&self->values[j];
-            }
-            
-            free(self->values);
-            self->values = temp;
-            
-            //Agregar nuevo key
-            KeyValueP * newKeyValue = (KeyValueP*) malloc(sizeof(KeyValueP));
-                
-            if(newKeyValue == NULL) return -2;
-
-            int newIndex = hashFunctionP(key);
-            
-            newKeyValue->key = key;
-            newKeyValue->value = newNode;
-
-            newKeyValue->next = self->values[(newIndex + 1 >= DIC_SIZE) ? newIndex : newIndex + 1];
-            self->values[newIndex] = newKeyValue;
-
-            return 2;
-
-        }
-        i++;
         currentKv = currentKv->next;
     }
-    
-    index = i;
+
     KeyValueP * newKeyValue = (KeyValueP*) malloc(sizeof(KeyValueP));
-    
     if(newKeyValue == NULL) return -2;
-    
+
     newKeyValue->key = key;
     newKeyValue->value = newNode;
-
-    newKeyValue->next = self->values[(index + 1 >= DIC_SIZE) ? index : index + 1];
+    newKeyValue->next = self->values[index];
     self->values[index] = newKeyValue;
     return 1;
 }
+
 
 
 NodeProcess* getProcessTableValue(ProcessTable * self, int key) {

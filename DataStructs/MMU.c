@@ -79,13 +79,23 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
 
 
 int addProcess(MMU * self, int processId) {
+    if (self == NULL) return 0;
+    if (getProcessTableValue(self->processTable, processId) != NULL) return 0;
+
+    NodeProcess * newProcess = createNodeProcess(processId);
+    if (newProcess == NULL) return 0;
+
+    if(addProcessTableElement(self->processTable, processId, newProcess) == 0) {
+        destroyNodeProcess(newProcess);
+        return 0;
+    }
     return 1; 
 }
 
 NodePage ** getPages(MMU * self, int processId, int * count) {
     if (count != NULL) *count = 0;
     if (self == NULL) return NULL;
-    if (findProcess(self->processTable, processId) == NULL) return NULL;
+    if (getProcessTableValue(self->processTable, processId) == NULL) return NULL;
 
     DLinkedList * list = self->pageTable;
     NodePage * page;
