@@ -121,12 +121,14 @@ NodePage* getDiskTableValue(DiskTable * self, int key) {
     if(self != NULL) {
         int index = hashFunctionDisk(key);
         KeyValueDisk * currentKv = self->values[index];
-        
+        int i =  index;
         while(currentKv != NULL) {
             if(currentKv->key == key) {
+                self->values[i] = NULL;
                 return currentKv->value;
             }
             currentKv = currentKv->next;
+            i++;
         }
     }
     return NULL;

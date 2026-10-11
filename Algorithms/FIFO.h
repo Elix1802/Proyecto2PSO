@@ -6,6 +6,6 @@
 
 
 void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr);
-void bringPageToMemoryFIFO(DLinkedList * Memory, DLinkedList);
+void bringPageToMemoryFIFO(DLinkedList * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr);
 
 #endif

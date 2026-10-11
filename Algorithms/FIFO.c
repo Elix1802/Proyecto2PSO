@@ -8,7 +8,7 @@
 void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
     NodePage* currentNode = getNextPtr(linkedList->head);
 
-    if(linkedList->size<100) {
+    if(linkedList->size<3) {
         appendNodeLinkedList(linkedList, nodePage);
         return;
     }
@@ -38,4 +38,12 @@ void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable 
 
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
+}
+
+void bringPageToMemoryFIFO(DLinkedList * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr) {
+    NodePage * nodePage = getDiskTableValue(diskTable, memoryPos);
+    if(nodePage != NULL) {
+        insertionPageFIFO(Memory, nodePage, diskTable, ptrDiskAddr);
+
+    }
 }

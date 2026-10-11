@@ -67,6 +67,12 @@ int main() {
   printDLinkedList(combined);
   printDiskTableValues(diskTable);
 
+  bringPageToMemoryFIFO(combined,diskTable, 100, &diskAddr);
+
+  printf("\nTabla Disco trayendo de disco\n");
+  printDLinkedList(combined);
+  printDiskTableValues(diskTable);
+
 
 
 
@@ -75,7 +81,7 @@ int main() {
 
   destroyNodePage(nodePage);
   destroyDLinkedList(linkedList);
-  destroyDiskTable(diskTable);
-  
+  //destroyDiskTable(diskTable);
+
   return 0;
 }
