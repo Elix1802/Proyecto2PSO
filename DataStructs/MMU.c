@@ -18,14 +18,17 @@ struct MMU {
   int pageSize;
   int algID;
   DLinkedList * pageTable;
-  DLinkedList * linkedListRAM; 
-  SymbolsTable * symbolsTable; 
-  ProcessTable * processTable; 
-  PtrEntry * ptrs; 
-};  
+  NodePage ** frames;
+  int frameCount;
+  SymbolsTable * symbolsTable;
+  ProcessTable * processTable;
+  PtrEntry * ptrs;
+  int nextPtr;
+  int nextPageId;
+};
 
 MMU * createMMU(int algID, int totalMemory, int pageSize) {
-    if (algID < 0) return NULL;
+    if (algID < OPT || algID > LFU) return NULL;
     if (pageSize <= 0 || totalMemory < pageSize) return NULL;
     if (totalMemory % pageSize != 0) return NULL;
 
@@ -37,10 +40,19 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->pageSize = pageSize;
     mmu->algID = algID;
     mmu->ptrs = NULL;
-    mmu->linkedListRAM = NULL;
+    mmu->nextPtr = 1;
+    mmu->nextPageId = 1;
+    mmu->frameCount = totalMemory / pageSize;
+
+    mmu->frames = (NodePage **) calloc(mmu->frameCount, sizeof(NodePage *));
+    if (mmu->frames == NULL) {
+        free(mmu);
+        return NULL;
+    }
 
     mmu->pageTable = createDLinkedList();
     if (mmu->pageTable == NULL) {
+        free(mmu->frames);
         free(mmu);
         return NULL;
     }
@@ -48,20 +60,23 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->processTable = createProcessTable();
     if (mmu->processTable == NULL) {
         destroyDLinkedList(mmu->pageTable);
+        free(mmu->frames);
         free(mmu);
         return NULL;
     }
 
     mmu->symbolsTable = createSymbolsTable();
     if (mmu->symbolsTable == NULL) {
-        destroyDLinkedList(mmu->pageTable);
         destroyProcessTable(mmu->processTable);
+        destroyDLinkedList(mmu->pageTable);
+        free(mmu->frames);
         free(mmu);
         return NULL;
     }
 
     return mmu;
 }
+
 
 int addProcess(MMU * self, int processId) {
     return 1; 
@@ -99,7 +114,7 @@ NodePage ** getPages(MMU * self, int processId, int * count) {
 
 void destroyMMU(MMU * self) {
     if (self == NULL) return;
- 
+
     destroyProcessTable(self->processTable);
     destroySymbolsTable(self->symbolsTable);
 
@@ -110,60 +125,68 @@ void destroyMMU(MMU * self) {
         free(e);
         e = next;
     }
- 
+
     destroyDLinkedList(self->pageTable);
+    free(self->frames);
     free(self);
 }
 
-int newP(MMU *mmu, int pid, int size) {
-    if (mmu == NULL || size <= 0) {
+static int findFreeFrame(MMU * self) {
+    for (int f = 0; f < self->frameCount; f++) {
+        if (self->frames[f] == NULL) return f;
+    }
+    return -1;
+}
+
+static NodePage * appendPageInRam(MMU * self, int pid, int logicalAddress, int frame) {
+    DLinkedList * list = self->pageTable;
+
+    append(list, self->nextPageId, pid, 1, logicalAddress, frame, -1);
+    goToEnd(list);
+    previousNodePage(list);
+    NodePage * page = getElement(list);
+    goToStart(list);
+
+    if (page == NULL) return NULL;
+
+    self->nextPageId++;
+    self->frames[frame] = page;
+    self->availableMemory -= self->pageSize;
+    return page;
+}
+
+int newP(MMU * self, int pid, int size) {
+    if (self == NULL || size <= 0) return -1;
+
+    int numPages = size / self->pageSize + (size % self->pageSize != 0);
+    if (numPages > self->availableMemory / self->pageSize) return -1;
+
+    if (getProcessTableValue(self->processTable, pid) == NULL && !addProcess(self, pid))
+        return -1;
+
+    PtrEntry * entry = (PtrEntry *) malloc(sizeof(PtrEntry));
+    if (entry == NULL) return -1;
+
+    entry->pages = (NodePage **) malloc(numPages * sizeof(NodePage *));
+    if (entry->pages == NULL) {
+        free(entry);
         return -1;
     }
 
-    int num_pages = (size + mmu->pageSize - 1) / mmu->pageSize;
+    entry->ptr = self->nextPtr++;
+    entry->pid = pid;
+    entry->size = size;
+    entry->nPages = 0;
+    entry->next = self->ptrs;
+    self->ptrs = entry;
 
-    static int global_ptr_counter = 1;
-    int assigned_ptr = global_ptr_counter++;
-
-    DLinkedList *page_list = createDLinkedList();
-    if (page_list == NULL) {
-        return -1;
+    for (int i = 0; i < numPages; i++) {
+        NodePage * page = appendPageInRam(self, pid, i * self->pageSize, findFreeFrame(self));
+        if (page == NULL) return -1;
+        entry->pages[entry->nPages++] = page;
     }
 
-    for (int i = 0; i < num_pages; i++) {
-        static int global_page_id_counter = 1;
-        int page_id = global_page_id_counter++;
-
-        int total_frames = mmu->totalMemory / mmu->pageSize;
-        int physical_segment = (page_id - 1) % total_frames;
-
-        NodePage *new_page = createNodePage(
-            page_id,
-            pid,
-            1,
-            i * mmu->pageSize,
-            physical_segment,
-            -1,
-            NULL,
-            NULL
-        );
-
-        if (new_page == NULL) {
-            destroyDLinkedList(page_list);
-            return -1;
-        }
-
-        d_linked_list_add(page_list, new_page);
-        d_linked_list_add(mmu->pageTable, new_page);
-    }
-
-    int registered = symbols_table_insert(mmu->symbolsTable, pid, assigned_ptr, page_list);
-    if (!registered) {
-        destroyDLinkedList(page_list);
-        return -1;
-    }
-
-    return assigned_ptr;
+    return entry->ptr;
 }
 
 void useP(MMU * self, int ptr) {

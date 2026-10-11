@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "MMU.h"
-#include "DataStructs/NodePage.h"
+#include "DataStructs/MMU.h"
 
-int main() {
+int main(void) {
     printf("=== PRUEBA DE LA MMU ===\n");
 
-    int total_memory = 400000;
+    int total_memory = 409600;
     int page_size = 4096;
-    int alg_id = 0; 
+    int alg_id = FIFO;
 
     MMU *mmu = createMMU(alg_id, total_memory, page_size);
     if (mmu == NULL) {
