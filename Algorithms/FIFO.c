@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include "../DataStructs/NodePage.h"
 #include "../DataStructs/DLinkedList.h"
+#include "../DataStructs/DiskTable.h"
 
-void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, int diskLocation){
+
+void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
     NodePage* currentNode = getNextPtr(linkedList->head);
 
     if(linkedList->size<100) {
@@ -32,6 +34,8 @@ void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, int diskLo
 
     oldestNode->nextPtr->pastPtr = nodePage;
 
-    putOnVirtualMemory(oldestNode, diskLocation);
+    putOnVirtualMemory(oldestNode, *ptrDiskAddr);
 
+    addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
+    *ptrDiskAddr = (*ptrDiskAddr) + 1;
 }

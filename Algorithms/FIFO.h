@@ -2,8 +2,10 @@
 #define FIFO_H
 #include "../DataStructs/NodePage.h"
 #include "../DataStructs/DLinkedList.h"
+#include "../DataStructs/DiskTable.h"
 
 
-void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage);
+void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr);
+void bringPageToMemoryFIFO(DLinkedList * Memory, DLinkedList);
 
 #endif

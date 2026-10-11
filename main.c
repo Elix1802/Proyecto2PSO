@@ -5,6 +5,7 @@
 #include "DataStructs/DLinkedList.h"
 #include "DataStructs/SymbolsTable.h"
 #include "DataStructs/ProcessTable.h"
+#include "DataStructs/DiskTable.h"  
 #include "Algorithms/FIFO.h"
 
 int main() {
@@ -16,6 +17,9 @@ int main() {
   NodeProcess * nodeProcess2 = createNodeProcess(2);
 
   ProcessTable * processTable = createProcessTable();
+  DiskTable * diskTable = createDiskTable();
+
+  int diskAddr = 100;
 
   append(linkedList, 2, 2, 2, 2, 2, 2, 5);
   //printNodePage(nodePage);
@@ -48,13 +52,20 @@ int main() {
   DLinkedList * combined = combineDLinkedList(linkedList, linkedList2);
   printf("\nCombined:\n");
   printDLinkedList(combined);
-  insertionPageFIFO(combined, page1);
+  insertionPageFIFO(combined, page1, diskTable, &diskAddr);
   printf("\nDespues de fifo:\n");
   printDLinkedList(combined);
   printf("\nDespues de fifo cambio:\n");
-  insertionPageFIFO(combined, page2);
+  insertionPageFIFO(combined, page2, diskTable, &diskAddr);
   printDLinkedList(combined);
 
+  insertionPageFIFO(combined, page3, diskTable, &diskAddr);
+
+
+
+  printf("\nTabla Disco\n");
+  printDLinkedList(combined);
+  printDiskTableValues(diskTable);
 
 
 
@@ -64,5 +75,7 @@ int main() {
 
   destroyNodePage(nodePage);
   destroyDLinkedList(linkedList);
+  destroyDiskTable(diskTable);
+  
   return 0;
 }
