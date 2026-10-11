@@ -8,7 +8,7 @@ struct NodePage {
     int L_Address;
     int M_Address;
     int D_Address; //-1 cuando no este en memoria virtual
-    int loaded_T;
+    int loaded_T; //El tiempo añadido
     int Mark;
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;

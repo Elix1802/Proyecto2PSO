@@ -4,12 +4,6 @@
 #include "NodePage.h"
 #include "DLinkedList.h"
 
-struct DLinkedList {
-    NodePage * head;
-    NodePage * tail;
-    NodePage * current;
-    int size;
-};
 
 
 DLinkedList* createDLinkedList() {
@@ -60,6 +54,18 @@ void append(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr,
 
     list->size++;
 }
+
+void appendNodeLinkedList(DLinkedList* list, NodePage * newNode) {
+    putPastPtr(newNode, getPastPtr(list->tail));
+    putNextPtr(newNode, list->tail);
+
+    NodePage* lastNode = getPastPtr(list->tail);
+    putNextPtr(lastNode, newNode);
+    putPastPtr(list->tail, newNode);
+
+    list->size++;
+}
+
 
 NodePage* removeNode(DLinkedList* list) {
     if (getNextPtr(list->current) == list->tail || list->size == 0) {

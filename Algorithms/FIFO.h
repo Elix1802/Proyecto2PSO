@@ -1,6 +1,9 @@
 #ifndef FIFO_H
 #define FIFO_H
+#include "../DataStructs/NodePage.h"
+#include "../DataStructs/DLinkedList.h"
 
-void FIFOInsertio( );
+
+void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage);
 
 #endif

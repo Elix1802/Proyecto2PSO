@@ -5,6 +5,7 @@
 #include "DataStructs/DLinkedList.h"
 #include "DataStructs/SymbolsTable.h"
 #include "DataStructs/ProcessTable.h"
+#include "Algorithms/FIFO.h"
 
 int main() {
   DLinkedList * linkedList = createDLinkedList();
@@ -47,9 +48,17 @@ int main() {
   DLinkedList * combined = combineDLinkedList(linkedList, linkedList2);
   printf("\nCombined:\n");
   printDLinkedList(combined);
-  goToStart(combined);
-  removeNode(combined);
+  insertionPageFIFO(combined, page3);
+  printf("\nDespues de fifo:\n");
   printDLinkedList(combined);
+  printf("\nDespues de fifo cambio:\n");
+  insertionPageFIFO(combined, page2);
+    printDLinkedList(combined);
+
+
+
+
+
 
 
 
