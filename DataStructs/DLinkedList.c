@@ -23,6 +23,14 @@ DLinkedList* createDLinkedList() {
     return list;
 }
 
+void destroyDLinkedList(DLinkedList* list) {
+    if (list != NULL) {
+        clearDLinkedList(list);
+        destroyNodePage(list->head);
+        destroyNodePage(list->tail);
+        free(list);
+    }
+}
 
 NodePage* getElement(DLinkedList* list) {
     if (getNextPtr(list->current) == list->tail || list->size == 0) {
