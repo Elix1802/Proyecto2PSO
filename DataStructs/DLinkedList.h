@@ -16,6 +16,8 @@ int atStart(DLinkedList* list);
 int atEnd(DLinkedList* list);
 void previousNodePage(DLinkedList* list);
 int getSize(DLinkedList* list);
+void printDLinkedList(DLinkedList* list);
+void clearDLinkedList(DLinkedList* list);
 
 #endif
 

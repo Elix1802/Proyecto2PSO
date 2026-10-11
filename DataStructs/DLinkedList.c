@@ -94,3 +94,21 @@ void previousNodePage(DLinkedList* list) {
 int getSize(DLinkedList* list) {
     return list->size;
 }
+
+void printDLinkedList(DLinkedList* list) {
+    NodePage* currentNode = getNextPtr(list->head);
+    while (currentNode != list->tail) {
+        printNodePage(currentNode);
+        currentNode = getNextPtr(currentNode);
+    }
+}
+
+void clearDLinkedList(DLinkedList* list){
+    while (getNextPtr(list->head) != list->tail) {
+        putNextPtr(list->head, getNextPtr(getNextPtr(list->head)));
+        destroyNodePage(getPastPtr(getNextPtr(list->head)));
+    }
+    list->current = list->head;
+    putPastPtr(list->tail, list->head);
+    list->size = 0;
+}
