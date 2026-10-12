@@ -32,23 +32,35 @@ NodePage* peek(const Queue *cola) {
     return cola->cantidad == 0 ? NULL : cola->datos[cola->frente];
 }
 
-void deleteSpecificElementQueue(Queue * cola, DiskTable * diskTable,int idPage, int * ptrDiskAddr){
-    int i;
-    for(i = 0; i<cola->cantidad; i++) {
-      if(cola->datos[i]->id == idPage) {
-        addDiskTableElement(diskTable, *ptrDiskAddr, cola->datos[i]);
-        *ptrDiskAddr = (*ptrDiskAddr)+ 1;
-        break;
-      }
-    }
-    
-    for(int j = i; j<cola->cantidad - 1; j++) {
-        cola->datos[j] = cola->datos[j+1]; 
-    }
+void deleteSpecificElementQueue(Queue *cola, int idPage) {
+    if (cola->cantidad == 0) return;
 
-    cola->cantidad--;
-    cola->final--;
+    int i = cola->frente;
+    int elementosProcesados = 0;
+    int cantidadOriginal = cola->cantidad;
+
+    while (elementosProcesados < cantidadOriginal) {
+        NodePage *nodoActual = cola->datos[i];
+
+        if (nodoActual->id == idPage) {
+            int actual = i;
+            for (int step = 0; step < cantidadOriginal - elementosProcesados - 1; step++) {
+                int siguiente = (actual + 1) % TAM_MAX;
+                cola->datos[actual] = cola->datos[siguiente];
+                actual = siguiente;
+            }
+            
+            cola->final = (cola->final - 1 + TAM_MAX) % TAM_MAX;
+            cola->cantidad--;
+            
+            cantidadOriginal--;
+        } else {
+            i = (i + 1) % TAM_MAX;
+            elementosProcesados++;
+        }
+    }
 }
+
 
 void printQueue(Queue * self) {
   if(self != NULL) {

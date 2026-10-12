@@ -17,7 +17,7 @@ void inicializar(Queue *cola);
 int enqueue(Queue *cola, NodePage* valor);
 NodePage* dequeue(Queue *cola);
 NodePage* peek(const Queue *cola);
-void deleteSpecificElementQueue(Queue * cola, DiskTable * diskTable,int idPage, int*ptrDiskAddr);
+void deleteSpecificElementQueue(Queue * cola, int idPage);
 void printQueue(Queue * self);
 
 #endif

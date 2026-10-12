@@ -128,15 +128,37 @@ int main() {
     int memory = 1024 * 400;
     int pageSize = 1024 * 4;
     MMU * mmu = createMMU(2, memory, pageSize);
-    int l_addr = newP(mmu, 1, 9000);
-    int l_addr2 = newP(mmu, 2, 9000);
-    printf("ID logico: %d\n", l_addr);
-    printDLinkedList(mmu->pageTable);
-    useP(mmu, l_addr);
-    useP(mmu, l_addr);
+    int l_addr = newP(mmu, 2, 9000);
+    int l_addr2 = newP(mmu, 1, 12288);
+    int l_addr3 = newP(mmu, 2, 9000);
+    int l_addr4 = newP(mmu, 1, 9000);
+
+
+    printQueue(mmu->MemoryFIFOSC);
+    printDiskTableValues(mmu->diskTable);
+
+    printf("Size: %d \n", mmu->pageTable->size);
+
+    //printf("ID logico: %d\n", l_addr);
+    printf("\n----------------------------------\n");
+    printf("\n----------------------------------\n");
+
+    //useP(mmu, l_addr);
+    //useP(mmu, l_addr);
     
     printf("\nDespués\n");
+    //printQueue(mmu->MemoryFIFOSC);
+
+    deleteP(mmu, l_addr);
+
+    printf("\n------------------Eliminados-------------------\n");
+
+    printDLinkedList(mmu->pageTable);
+        printf("Size: %d \n", mmu->pageTable->size);
+
+    printf("\n------------------Eliminados-------------------\n");
     printQueue(mmu->MemoryFIFOSC);
+    printDiskTableValues(mmu->diskTable);
 
 
 

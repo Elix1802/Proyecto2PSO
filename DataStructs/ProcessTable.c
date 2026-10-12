@@ -120,6 +120,7 @@ NodeProcess* getProcessTableValue(ProcessTable * self, int key) {
     if(self != NULL) {
         int index = hashFunctionP(key);
         KeyValueP * currentKv = self->values[index];
+        if(currentKv == NULL) return NULL;
         
         while(currentKv != NULL) {
             if(currentKv->key == key) {
@@ -127,6 +128,8 @@ NodeProcess* getProcessTableValue(ProcessTable * self, int key) {
             }
             currentKv = currentKv->next;
         }
+
+       
     }
     return NULL;
 }

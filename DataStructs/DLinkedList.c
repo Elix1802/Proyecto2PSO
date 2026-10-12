@@ -115,11 +115,13 @@ int getSize(DLinkedList* list) {
 
 void printDLinkedList(DLinkedList* list) {
     NodePage* currentNode = getNextPtr(list->head);
-    while (currentNode != list->tail) {
+    int i = 0;
+    while (i<list->size + 1) {
         if(currentNode->id >= 0) {
             printNodePage(currentNode);
         }
         currentNode = getNextPtr(currentNode);
+        i++;
 
     }
 }

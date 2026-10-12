@@ -85,7 +85,6 @@ void addSymbolsTableElement(SymbolsTable * self, int key, NodePage * newNode){
     newKeyValue->next = self->values[index];
     self->values[index] = newKeyValue;
 
-    printNodePage(self->values[index]->value);
 
 }
 
@@ -97,6 +96,22 @@ NodePage* getSymbolsTableValue(SymbolsTable * self, int key) {
         
         while(currentKv != NULL) {
             if(currentKv->key == key) {
+                return currentKv->value;
+            }
+            currentKv = currentKv->next;
+        }
+    }
+    return NULL;
+}
+
+NodePage* popSymbolsTableElement(SymbolsTable * self, int key) {
+    if(self != NULL) {
+        int index = hashFunctionD(key);
+        KeyValue * currentKv = self->values[index];
+        
+        while(currentKv != NULL) {
+            if(currentKv->key == key) {
+                self->values[index] = NULL;
                 return currentKv->value;
             }
             currentKv = currentKv->next;

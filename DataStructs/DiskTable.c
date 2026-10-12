@@ -135,12 +135,13 @@ NodePage* getDiskTableValue(DiskTable * self, int key) {
 }
 
 
+
 void printDiskTableValues(DiskTable * self) {
     if(self != NULL) {
         for(int i = 0; i < DIC_SIZE_DISK; i++) {
             KeyValueDisk * currentKv = self->values[i];
             if(currentKv != NULL) {
-                printf("idDisk: %d ; idPage: %d\n", currentKv->key, currentKv->value->id);
+                printNodePage(currentKv->value);
             }
         }
     }
