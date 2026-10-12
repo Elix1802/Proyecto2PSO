@@ -9,7 +9,7 @@
 void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
 
     if(Memory->cantidad < 2) {
-        printf("HOla amigo");
+        nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
         return;
     }
@@ -21,6 +21,7 @@ void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTabl
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
 
     //printNodePage(nodePage);
+    nodePage->M_Address = Memory->final;
     enqueue(Memory, nodePage);
 
     *ptrDiskAddr = (*ptrDiskAddr) + 1;

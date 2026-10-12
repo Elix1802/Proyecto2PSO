@@ -5,27 +5,12 @@
 #include "NodeProcess.h"
 #include "SymbolsTable.h"
 #include "ProcessTable.h"
+#include "DiskTable.h"
+#include "Queue.h"
+#include "../Algorithms/FIFO.h"
+#include "../Algorithms/SecondChance.h"
 
-typedef struct PtrEntry {
-    int ptr, pid, size, nPages;   
-    NodePage ** pages;
-    struct PtrEntry * next;
-} PtrEntry;
 
-struct MMU {
-  int availableMemory;
-  int totalMemory;
-  int pageSize;
-  int algID;
-  DLinkedList * pageTable;
-  NodePage ** frames;
-  int frameCount;
-  SymbolsTable * symbolsTable;
-  ProcessTable * processTable;
-  PtrEntry * ptrs;
-  int nextPtr;
-  int nextPageId;
-};
 
 MMU * createMMU(int algID, int totalMemory, int pageSize) {
     if (algID < OPT || algID > LFU) return NULL;
@@ -42,7 +27,9 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->ptrs = NULL;
     mmu->nextPtr = 1;
     mmu->nextPageId = 1;
+    mmu->nextDiskId = 100;
     mmu->frameCount = totalMemory / pageSize;
+    mmu->wastedMemory = 0.0;
 
     mmu->frames = (NodePage **) calloc(mmu->frameCount, sizeof(NodePage *));
     if (mmu->frames == NULL) {
@@ -74,6 +61,23 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
         return NULL;
     }
 
+    mmu->diskTable = createDiskTable();
+    if (mmu->diskTable == NULL) {
+        destroySymbolsTable(mmu->symbolsTable);
+        destroyProcessTable(mmu->processTable);
+        destroyDLinkedList(mmu->pageTable);
+        free(mmu->frames);
+        free(mmu);
+        return NULL;
+    }
+
+    //Selección de RAM
+    if(algID == 2 || algID == 3) {
+        Queue * queue = (Queue*) malloc(sizeof(Queue));
+        inicializar(queue);
+        mmu->MemoryFIFOSC =queue; 
+    }
+
     return mmu;
 }
 
@@ -92,34 +96,17 @@ int addProcess(MMU * self, int processId) {
     return 1; 
 }
 
-NodePage ** getPages(MMU * self, int processId, int * count) {
-    if (count != NULL) *count = 0;
+DLinkedList * getPages(MMU * self, int processId) {
     if (self == NULL) return NULL;
     if (getProcessTableValue(self->processTable, processId) == NULL) return NULL;
 
     DLinkedList * list = self->pageTable;
-    NodePage * page;
+    NodeProcess * process = getProcessTableValue(self->processTable, processId);
 
-    int total = 0;
-    goToStart(list);
-    while ((page = getElement(list)) != NULL) {
-        if (page->parentId == processId) total++;
-        nextNodePage(list);
-    }
-    if (total == 0) return NULL;
+    DLinkedList * pages = getAllProcessPages(process);
 
-    NodePage ** result = (NodePage **) malloc(total * sizeof(NodePage *));
-    if (result == NULL) return NULL;
-
-    int i = 0;
-    goToStart(list);
-    while ((page = getElement(list)) != NULL) {
-        if (page->parentId == processId) result[i++] = page;
-        nextNodePage(list);
-    }
-
-    if (count != NULL) *count = total;
-    return result;
+    
+    return pages;
 }
 
 void destroyMMU(MMU * self) {
@@ -169,37 +156,66 @@ int newP(MMU * self, int pid, int size) {
     if (self == NULL || size <= 0) return -1;
 
     int numPages = size / self->pageSize + (size % self->pageSize != 0);
-    if (numPages > self->availableMemory / self->pageSize) return -1;
+    self->wastedMemory += numPages*self->pageSize - size;
 
-    if (getProcessTableValue(self->processTable, pid) == NULL && !addProcess(self, pid))
-        return -1;
+    NodeProcess * newProcess = createNodeProcess(pid);
+    addProcessTableElement(self->processTable, pid, newProcess); //Tabla de procesos
 
-    PtrEntry * entry = (PtrEntry *) malloc(sizeof(PtrEntry));
-    if (entry == NULL) return -1;
+    int l_addr = self->nextPageId; 
+    for(int i = 0; i<numPages; i++) {
 
-    entry->pages = (NodePage **) malloc(numPages * sizeof(NodePage *));
-    if (entry->pages == NULL) {
-        free(entry);
-        return -1;
+        NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
+        addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
+        addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //SE añade la pagina a la tabla de simbolos
+
+
+        if(self->algID == 2) { //2 FIFO
+            insertionPageFIFO(self->MemoryFIFOSC, newNode, self->diskTable, &self->nextDiskId); //Se añade la página a ram
+        }
+
+        else if(self->algID == 3) {
+            insertionPageSecondChance(self->MemoryFIFOSC, newNode, self->diskTable, &self->nextDiskId);
+        }
+
+
     }
-
-    entry->ptr = self->nextPtr++;
-    entry->pid = pid;
-    entry->size = size;
-    entry->nPages = 0;
-    entry->next = self->ptrs;
-    self->ptrs = entry;
-
-    for (int i = 0; i < numPages; i++) {
-        NodePage * page = appendPageInRam(self, pid, i * self->pageSize, findFreeFrame(self));
-        if (page == NULL) return -1;
-        entry->pages[entry->nPages++] = page;
-    }
-
-    return entry->ptr;
+    self->pageTable = combineDLinkedList(self->pageTable, newProcess->pages);
+    return l_addr;
 }
 
 void useP(MMU * self, int ptr) {
+    if(self != NULL) {
+
+        NodePage * nodePage = getSymbolsTableValue(self->symbolsTable, ptr);
+        //printDLinkedList(self->pageTable);
+
+        if(nodePage != NULL) {
+            while(nodePage->id != -2) {
+                printf("\nNodito\n");
+                printNodePage(nodePage);
+
+                if(self->algID == 3) {
+                    nodePage->Mark = 1;
+                } 
+
+                if(nodePage->loaded == 0) {
+                    switch(self->algID){
+                        case 2:
+                            bringPageToMemoryFIFO(self->MemoryFIFOSC, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            break;
+                        case 3:
+                            bringPageToMemorySecondChance(self->MemoryFIFOSC, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            break;
+                        default:
+                            break;
+                    }   
+                }
+
+                nodePage = getNextPtr(nodePage);
+            }
+        }
+        return;
+    }
 }
 
 void deleteP(MMU * self, int ptr) {

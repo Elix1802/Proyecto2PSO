@@ -7,6 +7,7 @@
 #include "DataStructs/ProcessTable.h"
 #include "DataStructs/DiskTable.h"  
 #include "DataStructs/Queue.h"
+#include "DataStructs/MMU.h"
 #include "Algorithms/FIFO.h"
 
 /** 
@@ -89,6 +90,7 @@ int main() {
 }
 */
 
+/** 
 int main() {
     DLinkedList * linkedList = createDLinkedList();
     Queue * cola = (Queue*) malloc(sizeof(Queue)); //RAM
@@ -119,4 +121,22 @@ int main() {
 
     printQueue(cola);
     printDiskTableValues(diskTable);
+}
+*/
+
+int main() {
+    int memory = 1024 * 400;
+    int pageSize = 1024 * 4;
+    MMU * mmu = createMMU(2, memory, pageSize);
+    int l_addr = newP(mmu, 1, 9000);
+    printf("ID logico: %d\n", l_addr);
+    printDLinkedList(mmu->pageTable);
+    useP(mmu, l_addr);
+    
+    printf("\nDespués\n");
+    //printQueue(mmu->MemoryFIFOSC);
+
+
+
+    return 0;
 }

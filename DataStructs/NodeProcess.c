@@ -32,26 +32,14 @@ int getNumberPages(NodeProcess * self) {
     }
 }
 
-NodePage ** getAllProcessPages(NodeProcess * self) {
+DLinkedList * getAllProcessPages(NodeProcess * self) {
     if(self != NULL) {
         int pagesNum = getSize(self->pages);
         if(pagesNum > 0) {
-            NodePage ** pages = (NodePage**) malloc(pagesNum*sizeof(NodePage*));
-            goToStart(self->pages);
-            
-            int i = 0;
-            while(!atEnd(self->pages)) {
-                pages[i] = getElement(self->pages);
-                nextNodePage(self->pages);
-                i++;
-            }
-
-            return pages;
+           return self->pages;
         }
-
         return NULL;
     }
-
     return NULL;
 }
 
@@ -135,9 +123,9 @@ int deleteAllLogicalAddressPages(NodeProcess * self, int L_Addr) {
 }
 
 //add
-void addNodePageToProcess(NodeProcess * self, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T){
+void addNodePageToProcess(NodeProcess * self, NodePage * newNode){
     if(self != NULL) {
-        append(self->pages, pageId, parentId, loaded, L_Addr, M_Addr, D_addr, loaded_T);
+        appendNodeLinkedList(self->pages, newNode);
         self->pagesNumber++;
     }
 

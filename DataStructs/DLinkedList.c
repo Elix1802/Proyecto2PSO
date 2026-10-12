@@ -139,9 +139,11 @@ DLinkedList * combineDLinkedList(DLinkedList * list1, DLinkedList * list2) {
     if (list == NULL) {
         return NULL; 
     }
-    list->current = list->head = list1->head;
+    list->head = list1->head;
+    list->current = list->head;
     putNextPtr(list1->tail, list2->head);
     putPastPtr(list2->head, list1->tail);
+
     list->tail = list2->tail;
     list->size = list1->size + list2->size;
     return list;

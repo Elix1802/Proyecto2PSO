@@ -6,7 +6,7 @@
 
 void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
     
-    if(Memory->cantidad < 100) {
+    if(Memory->cantidad < 2) {
         enqueue(Memory, nodePage);
         return;
     }

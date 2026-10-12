@@ -70,15 +70,6 @@ void addSymbolsTableElement(SymbolsTable * self, int key, NodePage * newNode){
     KeyValue * currentKv = self->values[index];
     while(currentKv != NULL) {
         if(currentKv->key == key) {
-            NodePage * currentHead = currentKv->value;
-            
-            putNextPtr(newNode, currentHead);
-            if(currentHead != NULL) {
-                putPastPtr(currentHead, newNode);
-            }
-            putPastPtr(newNode, NULL);
-            
-            currentKv->value = newNode;
             return;
         }
         currentKv = currentKv->next;
@@ -89,12 +80,13 @@ void addSymbolsTableElement(SymbolsTable * self, int key, NodePage * newNode){
     
     newKeyValue->key = key;
     newKeyValue->value = newNode;
-    
-    putNextPtr(newNode, NULL);
-    putPastPtr(newNode, NULL);
+
     
     newKeyValue->next = self->values[index];
     self->values[index] = newKeyValue;
+
+    printNodePage(self->values[index]->value);
+
 }
 
 

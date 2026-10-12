@@ -11,8 +11,8 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     nodePage->parentId = parentId;
     nodePage->loaded = loaded;
     nodePage->L_Address = L_Addr;
-    nodePage->M_Address = M_Addr;
-    nodePage->D_Address = D_addr;
+    nodePage->M_Address = M_Addr; //-1 Todavia no tiene asignado espacio
+    nodePage->D_Address = D_addr; //-1 Todavia no tiene asignado espacio
     nodePage->loaded_T = loaded_T;
     nodePage->Mark = 0;
     nodePage->nextPtr = nextPtr;
