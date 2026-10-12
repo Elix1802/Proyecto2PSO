@@ -32,8 +32,8 @@ void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTabl
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
 }
 
-void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr) {
-    NodePage * nodePage = getDiskTableValue(diskTable, memoryPos);
+void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr) {
+    NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
         bringFromDisk(nodePage);
         insertionPageFIFO(Memory, nodePage, diskTable, ptrDiskAddr);

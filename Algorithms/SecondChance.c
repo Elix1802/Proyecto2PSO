@@ -36,8 +36,8 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
     }
 }
 
-void bringPageToMemorySecondChance(Queue * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr) {
-    NodePage * nodePage = getDiskTableValue(diskTable, memoryPos);
+void bringPageToMemorySecondChance(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr) {
+    NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
         bringFromDisk(nodePage);
         insertionPageSecondChance(Memory, nodePage, diskTable, ptrDiskAddr);

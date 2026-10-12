@@ -113,15 +113,35 @@ int getSize(DLinkedList* list) {
     return list->size;
 }
 
+NodePage  ** getAllNodes(DLinkedList * list) {
+    if(list != NULL) {
+        NodePage ** newList = (NodePage**) malloc(list->size * sizeof(NodePage*));
+        NodePage* currentNode = getNextPtr(list->head);
+        int i = 0;
+        while (i<list->size ) {
+            if(currentNode->id >= 0) {
+                newList[i] = currentNode;
+                i++;
+            }
+            currentNode = getNextPtr(currentNode);
+        }
+
+        return newList;
+    }
+
+    return NULL;
+}
+
 void printDLinkedList(DLinkedList* list) {
     NodePage* currentNode = getNextPtr(list->head);
     int i = 0;
-    while (i<list->size + 1) {
+    while (i<list->size ) {
         if(currentNode->id >= 0) {
             printNodePage(currentNode);
+            i++;
+
         }
         currentNode = getNextPtr(currentNode);
-        i++;
 
     }
 }
@@ -129,7 +149,9 @@ void printDLinkedList(DLinkedList* list) {
 void clearDLinkedList(DLinkedList* list){
     while (getNextPtr(list->head) != list->tail) {
         putNextPtr(list->head, getNextPtr(getNextPtr(list->head)));
-        destroyNodePage(getPastPtr(getNextPtr(list->head)));
+        if (getPastPtr(getNextPtr(list->head)) != NULL) {
+            destroyNodePage(getPastPtr(getNextPtr(list->head)));
+        }
     }
     list->current = list->head;
     putPastPtr(list->tail, list->head);

@@ -7,5 +7,5 @@
 
 
 void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr);
-void bringPageToMemorySecondChance(Queue * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr);
+void bringPageToMemorySecondChance(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr);
 #endif

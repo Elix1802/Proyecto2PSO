@@ -18,6 +18,7 @@ NodePage* getElement(DLinkedList* list);
 void insert(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T);
 void append(DLinkedList* list, int pageId, int parentId, int loaded, int L_Addr, int M_Addr, int D_addr, int loaded_T);
 void appendNodeLinkedList(DLinkedList* list, NodePage * newNode);
+NodePage ** getAllNodes(DLinkedList * list);
 
 NodePage* removeNode(DLinkedList* list);
 void goToStart(DLinkedList* list);

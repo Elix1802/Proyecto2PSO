@@ -44,7 +44,9 @@ void destroyProcessTable(ProcessTable * self) {
     if(self != NULL) {
         for (int i = 0; i < DIC_SIZE; i++) {
             KeyValueP * currentKv = self->values[i];
-            destroyNodeProcess(currentKv->value);
+            if (currentKv != NULL && currentKv->value != NULL) {
+                destroyNodePage(currentKv->value);
+            }
         }
         free(self->values);
         free(self);

@@ -130,40 +130,46 @@ int main() {
     MMU * mmu = createMMU(2, memory, pageSize);
     int l_addr = newP(mmu, 2, 9000);
     int l_addr2 = newP(mmu, 1, 12288);
-    int l_addr3 = newP(mmu, 2, 9000);
-    int l_addr4 = newP(mmu, 1, 9000);
+    //int l_addr3 = newP(mmu, 2, 9000);
+    //int l_addr4 = newP(mmu, 1, 9000);
 
-
-    printQueue(mmu->MemoryFIFOSC);
+    printf("\n----------------------------------\n");
+    printf("Memoria RAM y disco antes del use");
+    printQueue(mmu->MemoryRAM);
+    printf("\n----------------------------------\n");
     printDiskTableValues(mmu->diskTable);
-
-    printf("Size: %d \n", mmu->pageTable->size);
-
-    //printf("ID logico: %d\n", l_addr);
-    printf("\n----------------------------------\n");
     printf("\n----------------------------------\n");
 
-    //useP(mmu, l_addr);
+    useP(mmu, l_addr);
     //useP(mmu, l_addr);
     
     printf("\nDespués\n");
-    //printQueue(mmu->MemoryFIFOSC);
+    printf("\n----------------------------------\n");
+    printf("Memoria RAM y disco después del use");
+    printQueue(mmu->MemoryRAM);
+    printf("\n----------------------------------\n");
+    printDiskTableValues(mmu->diskTable);
+    printf("\n----------------------------------\n");
+    printDLinkedList(mmu->pageTable);
 
-    deleteP(mmu, l_addr2);
-
+    deleteP(mmu, l_addr);
     printf("\n------------------Eliminados-------------------\n");
 
-    printDLinkedList(mmu->pageTable);
+    printQueue(mmu->MemoryRAM);
+    printDiskTableValues(mmu->diskTable);
+
     printf("Size: %d \n", mmu->pageTable->size);
 
     printf("\n------------------Eliminados-------------------\n");
-    printQueue(mmu->MemoryFIFOSC);
-    printDiskTableValues(mmu->diskTable);
+    //printQueue(mmu->MemoryFIFOSC);
+    //printDiskTableValues(mmu->diskTable);
 
-    printf("\n------------------Eliminados-------------------\n");
-    killP(mmu, 2);
-        printDLinkedList(mmu->pageTable);
+    printf("\n------------------Obteneindo e imprimiendo-------------------\n");
+    //killP(mmu, 2);
+    for(int i = 0; i<mmu->pageTable->size; i++)
+        printNodePage(getAllNodes(mmu->pageTable)[i]);
 
+    
 
 
 

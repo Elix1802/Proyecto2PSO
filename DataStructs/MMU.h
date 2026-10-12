@@ -37,7 +37,7 @@ struct MMU {
   DiskTable * diskTable;
   PtrEntry * ptrs;
 
-  Queue * MemoryFIFOSC;
+  Queue * MemoryRAM;
 
   int nextPtr;
   int nextPageId;
