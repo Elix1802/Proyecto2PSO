@@ -8,12 +8,17 @@
 
 void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
 
-    if(Memory->cantidad < 2) {
+    if(Memory->cantidad < 5) {
         nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
         return;
     }
 
+    for(int i = Memory->frente; i<Memory->final;i++) {
+        if(Memory->datos[i]->id == nodePage->id) return;
+    }
+
+    
     NodePage * oldestNode = dequeue(Memory);
 
     putOnVirtualMemory(oldestNode, *ptrDiskAddr);

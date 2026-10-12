@@ -187,11 +187,9 @@ void useP(MMU * self, int ptr) {
     if(self != NULL) {
 
         NodePage * nodePage = getSymbolsTableValue(self->symbolsTable, ptr);
-        //printDLinkedList(self->pageTable);
 
         if(nodePage != NULL) {
             while(nodePage->id != -2) {
-                printf("\nNodito\n");
                 printNodePage(nodePage);
 
                 if(self->algID == 3) {

@@ -129,12 +129,14 @@ int main() {
     int pageSize = 1024 * 4;
     MMU * mmu = createMMU(2, memory, pageSize);
     int l_addr = newP(mmu, 1, 9000);
+    int l_addr2 = newP(mmu, 2, 9000);
     printf("ID logico: %d\n", l_addr);
     printDLinkedList(mmu->pageTable);
     useP(mmu, l_addr);
+    useP(mmu, l_addr);
     
     printf("\nDespués\n");
-    //printQueue(mmu->MemoryFIFOSC);
+    printQueue(mmu->MemoryFIFOSC);
 
 
 
