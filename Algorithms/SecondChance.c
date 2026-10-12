@@ -16,10 +16,10 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
         NodePage* candidateNode = dequeue(Memory);
         if (candidateNode->Mark == 1) {
             candidateNode->Mark = 0;
-            enqueue(&Memory, candidateNode);
+            enqueue(Memory, candidateNode);
         }
         else {
-            enqueue(&Memory, nodePage);
+            enqueue(Memory, nodePage);
             putOnVirtualMemory(candidateNode, *ptrDiskAddr);
             addDiskTableElement(diskTable, *ptrDiskAddr, candidateNode);
             *ptrDiskAddr = (*ptrDiskAddr) + 1;
