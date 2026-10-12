@@ -3,9 +3,10 @@
 #include "../DataStructs/NodePage.h"
 #include "../DataStructs/DLinkedList.h"
 #include "../DataStructs/DiskTable.h"
+#include "../DataStructs/Queue.h"
 
 
-void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr);
-void bringPageToMemoryFIFO(DLinkedList * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr);
+void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr);
+void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr);
 
 #endif

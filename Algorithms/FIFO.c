@@ -2,47 +2,34 @@
 #include <stdlib.h>
 #include "../DataStructs/NodePage.h"
 #include "../DataStructs/DLinkedList.h"
+#include "../DataStructs/Queue.h"
 #include "../DataStructs/DiskTable.h"
 
 
-void insertionPageFIFO(DLinkedList * linkedList, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
-    NodePage* currentNode = getNextPtr(linkedList->head);
+void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
 
-    if(linkedList->size<3) {
-        appendNodeLinkedList(linkedList, nodePage);
+    if(Memory->cantidad < 2) {
+        printf("HOla amigo");
+        enqueue(Memory, nodePage);
         return;
     }
 
-    int lowestId = currentNode->id;
-    NodePage * oldestNode = currentNode;
-
-    while (currentNode != linkedList->tail) {
-        if(currentNode->id >= 0) {
-            if(currentNode->id < lowestId) {
-                lowestId = currentNode->id;
-                oldestNode = currentNode;
-            }
-        }
-        currentNode = getNextPtr(currentNode);
-    }
-
-    nodePage->pastPtr = oldestNode->pastPtr;
-
-    nodePage->nextPtr = oldestNode->nextPtr;
-
-    oldestNode->pastPtr->nextPtr = nodePage;
-
-    oldestNode->nextPtr->pastPtr = nodePage;
+    NodePage * oldestNode = dequeue(Memory);
 
     putOnVirtualMemory(oldestNode, *ptrDiskAddr);
 
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
+
+    //printNodePage(nodePage);
+    enqueue(Memory, nodePage);
+
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
 }
 
-void bringPageToMemoryFIFO(DLinkedList * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr) {
+void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int memoryPos, int *  ptrDiskAddr) {
     NodePage * nodePage = getDiskTableValue(diskTable, memoryPos);
     if(nodePage != NULL) {
+        bringFromDisk(nodePage);
         insertionPageFIFO(Memory, nodePage, diskTable, ptrDiskAddr);
 
     }

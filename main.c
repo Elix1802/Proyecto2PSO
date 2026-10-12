@@ -6,8 +6,10 @@
 #include "DataStructs/SymbolsTable.h"
 #include "DataStructs/ProcessTable.h"
 #include "DataStructs/DiskTable.h"  
+#include "DataStructs/Queue.h"
 #include "Algorithms/FIFO.h"
 
+/** 
 int main() {
   DLinkedList * linkedList = createDLinkedList();
   DLinkedList * linkedList2 = createDLinkedList();
@@ -84,4 +86,37 @@ int main() {
   //destroyDiskTable(diskTable);
 
   return 0;
+}
+*/
+
+int main() {
+    DLinkedList * linkedList = createDLinkedList();
+    Queue * cola = (Queue*) malloc(sizeof(Queue)); //RAM
+    DiskTable * diskTable = createDiskTable();
+    int diskAddr = 100;
+
+    int L_addr = 3;
+    inicializar(cola);
+    NodePage * page1 = createNodePage(4, 1, 1, 10, 20, 30, L_addr,NULL, NULL);
+    NodePage * page2 = createNodePage(5, 1, 1, 40, 50, 60, L_addr, NULL, NULL);
+    NodePage * page3 = createNodePage(6, 1, 1, 70, 80, 90, L_addr, NULL, NULL);
+
+    appendNodeLinkedList(linkedList, page1);
+    appendNodeLinkedList(linkedList, page2);
+
+    appendNodeLinkedList(linkedList, page3);
+
+    insertionPageFIFO(cola,page1, diskTable, &diskAddr);
+    insertionPageFIFO(cola,page2, diskTable, &diskAddr);
+    printQueue(cola);
+
+    printf("\nSe inserta uno mas que el tamaño\n");
+    insertionPageFIFO(cola,page3, diskTable, &diskAddr);
+    printDiskTableValues(diskTable);
+    printQueue(cola);
+    bringPageToMemoryFIFO(cola, diskTable, 100, &diskAddr);
+    printf("\nQuedó\n");
+
+    printQueue(cola);
+    printDiskTableValues(diskTable);
 }

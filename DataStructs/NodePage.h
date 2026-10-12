@@ -28,6 +28,7 @@ NodePage * getPastPtr(NodePage * self);
 void putNextPtr(NodePage * self, NodePage * nextPtr);
 void putPastPtr(NodePage * self, NodePage * pastPtr);
 void putOnVirtualMemory(NodePage * self, int D_Addr);
+void bringFromDisk(NodePage * self);
 
 //print
 void printNodePage(NodePage * self);

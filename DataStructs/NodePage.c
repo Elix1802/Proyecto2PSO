@@ -57,6 +57,13 @@ void putOnVirtualMemory(NodePage * self, int D_addr) {
     }
 }
 
+void bringFromDisk(NodePage * self) {
+    if(self != NULL) {
+        self->D_Address = -1;
+        self->loaded = 1;
+    }
+}
+
 void addTimeOnNodePage(NodePage * self, int time) {
     if(self!=NULL) {
         self->loaded_T++;
