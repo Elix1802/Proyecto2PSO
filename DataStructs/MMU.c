@@ -161,19 +161,17 @@ int newP(MMU * self, int pid, int size) {
     NodeProcess * newProcess = getProcessTableValue(self->processTable, pid);
     if(newProcess  == NULL) 
     {   
-        printf("Id : %d\n",pid);
         newProcess = createNodeProcess(pid);
         addProcessTableElement(self->processTable, pid, newProcess); //Tabla de procesos
 
     }
 
-        printProcessTableValues(self->processTable);
 
 
     int l_addr = self->nextPageId; 
     for(int i = 0; i<numPages; i++) {
 
-        NodePage * newNode = createNodePage(self->nextPageId, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
+        NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
         addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
         addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //SE añade la pagina a la tabla de simbolos
 
@@ -186,7 +184,6 @@ int newP(MMU * self, int pid, int size) {
             insertionPageSecondChance(self->MemoryFIFOSC, newNode, self->diskTable, &self->nextDiskId);
         }
 
-        self->nextPageId+=1;
 
 
     }
@@ -231,10 +228,7 @@ void deleteP(MMU * self, int ptr) {
         NodePage * nodePage = popSymbolsTableElement(self->symbolsTable, ptr);
         int parentId = nodePage->parentId;
         NodeProcess * process = getProcessTableValue(self->processTable, parentId);
-        printf("\nTata:\n");
-        
-        //printDLinkedList(process->pages);
-        printf("\n--------------Tata:*--------------------\n");
+
 
         while(nodePage->id != -2) {
             if(nodePage->L_Address == ptr && nodePage->loaded == 1) 
@@ -266,4 +260,37 @@ void deleteP(MMU * self, int ptr) {
 }
 
 void killP(MMU * self, int pid) {
+    if(self!=NULL) {
+        NodeProcess * process = getProcessTableValue(self->processTable, pid);
+        DLinkedList * pages = getAllProcessPages(process);
+        goToStart(pages);
+        NodePage * page = getElement(pages);
+        while(page->id != -2) {
+            if(page->loaded == 1) 
+            {   
+                deleteSpecificElementQueue(self->MemoryFIFOSC,page->id);
+            }
+            page = getNextPtr(page);
+        }
+        
+        
+        goToStart(self->pageTable);
+        
+        while (!atEnd(self->pageTable)) {
+            NodePage* nodoActual = getElement(self->pageTable);
+            
+            if (nodoActual != NULL && nodoActual->parentId == pid) {
+                //printNodePage(nodoActual);
+                NodePage* eliminado = removeNode(self->pageTable);
+                if (eliminado != NULL) {
+                    getDiskTableValue(self->diskTable, nodoActual->D_Address);
+                    destroyNodePage(eliminado); 
+                }
+            } else {
+                nextNodePage(self->pageTable);
+            }
+        
+        }       
+    }
+
 }

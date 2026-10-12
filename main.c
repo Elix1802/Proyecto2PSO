@@ -149,16 +149,21 @@ int main() {
     printf("\nDespués\n");
     //printQueue(mmu->MemoryFIFOSC);
 
-    deleteP(mmu, l_addr);
+    deleteP(mmu, l_addr2);
 
     printf("\n------------------Eliminados-------------------\n");
 
     printDLinkedList(mmu->pageTable);
-        printf("Size: %d \n", mmu->pageTable->size);
+    printf("Size: %d \n", mmu->pageTable->size);
 
     printf("\n------------------Eliminados-------------------\n");
     printQueue(mmu->MemoryFIFOSC);
     printDiskTableValues(mmu->diskTable);
+
+    printf("\n------------------Eliminados-------------------\n");
+    killP(mmu, 2);
+        printDLinkedList(mmu->pageTable);
+
 
 
 
