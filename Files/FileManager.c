@@ -4,6 +4,8 @@
 #include <ctype.h>
 
 
+
+
 enum OP {
     NEW = 1,
     USE = 2,
@@ -11,12 +13,30 @@ enum OP {
     KILL = 4
 };
 
-void runFile(char *filename) {
+typedef struct Instruction {
+    enum OP operation;
+    int pid; //Para New y Kill
+    int size; //Para New
+    int ptr; //Para Use y Delete
+    int line;
+} Instruction;
+
+//Random
+static void rngSeed(unsigned int seed) {
+    srand(seed);
+}
+
+static int rngRand(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
+
+//Archivo
+int runFile(char *filename) {
 
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return;
+        return 0;
     }
 
     int lineCounter = 0;
@@ -52,7 +72,7 @@ void runFile(char *filename) {
         } else {
             printf("Error: Invalid operation in line %d: %s\n", lineCounter, start);
             fclose(file);
-            return;
+            return 0;
         }
 
         int pid = 0, size = 0, ptr = 0;
@@ -62,10 +82,10 @@ void runFile(char *filename) {
                 if (sscanf(start, "new(%d,%d)", &pid, &size) != 2) {
                     printf("Error: Invalid format in line %d: %s\n", lineCounter, start);
                     fclose(file);
-                    return;
+                    return 0;
                 }
                 ptr = nextPtr++;
-                printf("new: pid=%d size=%d ptr=%d\n", pid, size, ptr);
+                printf("new(%d,%d) ptr=%d\n", pid, size, ptr);
                 // newP(pid, size);
                 break;
 
@@ -73,9 +93,9 @@ void runFile(char *filename) {
                 if (sscanf(start, "use(%d)", &ptr) != 1) {
                     printf("Error: Invalid format in line %d: %s\n", lineCounter, start);
                     fclose(file);
-                    return;
+                    return 0;
                 }
-                printf("use: ptr=%d\n", ptr);
+                printf("use(%d)\n", ptr);
                 // useP(ptr);
                 break;
 
@@ -83,9 +103,9 @@ void runFile(char *filename) {
                 if (sscanf(start, "delete(%d)", &ptr) != 1) {
                     printf("Error: Invalid format in line %d: %s\n", lineCounter, start);
                     fclose(file);
-                    return;
+                    return 0;
                 }
-                printf("delete: ptr=%d\n", ptr);
+                printf("delete(%d)  \n", ptr);
                 // deleteP(ptr);
                 break;
 
@@ -93,9 +113,9 @@ void runFile(char *filename) {
                 if (sscanf(start, "kill(%d)", &pid) != 1) {
                     printf("Error: Invalid format in line %d: %s\n", lineCounter, start);
                     fclose(file);
-                    return;
+                    return 0;
                 }
-                printf("kill: pid=%d\n", pid);
+                printf("kill(%d)\n", pid);
 
                 // killP(pid);
                 break;
@@ -103,12 +123,40 @@ void runFile(char *filename) {
     }
 
     fclose(file);
+    return 1;
 }
+
+
+
+
+//Random
+
+
 
 int main(int argc, char *argv[]) {
 
 
-    runFile("ejemplo.txt");
+    //runFile("ejemplo.txt");
+    printf("Semilla 1\n");
+    rngSeed(1);
+    for(int i = 0; i < 10; i++) {
+        printf("%d ", rngRand(1, 100));
+    }
+    printf("\n");
+
+    printf("Semilla 2\n");
+    rngSeed(2);
+    for(int i = 0; i < 10; i++) {
+        printf("%d ", rngRand(1, 100));
+    }
+    printf("\n");
+
+    printf("Semilla 1 de nuevo\n");
+    rngSeed(1);
+    for(int i = 0; i < 10; i++) {
+        printf("%d ", rngRand(1, 100));
+    }
+    printf("\n");
 
     return 0;
 }
