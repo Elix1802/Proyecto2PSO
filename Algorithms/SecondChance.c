@@ -11,6 +11,13 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
         return;
     }
 
+    for (int i = Memory->frente; i < Memory->final; i++) {
+        if (Memory->datos[i]->id == nodePage->id)  {
+            Memory->datos[i]->Mark = 1;
+            return;
+        }
+        
+    }
     
     while (1) {
         NodePage* candidateNode = dequeue(Memory);
