@@ -8,17 +8,18 @@ enum OP{
     KILL = 4
 };
 
-typedef struct {
-    OP operation;
-    int pid;
-    int size;
-    int ptr;
-    int line;
+typedef struct Instruction {
+    enum OP operation;
+    int pid; //New y Kill
+    int size; //New
+    int ptr; //Use y Delete
+    int line; 
 }Instruction;
 
 typedef struct {
     Instruction* instructions;
     int count;
+    int capacity;
 } InstructionList;
 
 //P: numero de procesos a simular 
@@ -26,6 +27,8 @@ typedef struct {
 int generateInstructions(unsigned int seed, int P, int N, InstructionList* instructionList);
 int runFile(char *filename);
 
+void initInstructionList(InstructionList* instructionList);
+void addInstruction(InstructionList* instructionList, Instruction instruction);
 void freeInstructionList(InstructionList* instructionList);
 
 #endif

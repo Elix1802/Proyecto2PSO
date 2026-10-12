@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "FileManager.h"
 
 
 
@@ -130,6 +131,37 @@ int runFile(char *filename) {
 
 
 //Random
+void initInstructionList(InstructionList* instructionList) {
+    instructionList->instructions = NULL;
+    instructionList->count = 0;
+    instructionList->capacity = 0;
+}
+
+int appendInstruction(InstructionList* instructionList, enum OP operation, int pid, int size, int ptr) {
+    if (instructionList->count == instructionList->capacity) {
+        int newCap = (instructionList->capacity == 0) ? 128 : instructionList->capacity * 2;
+        Instruction* tmp = (Instruction*)realloc(instructionList->instructions, newCap * sizeof(Instruction));
+        if (tmp == NULL) return -1;
+        instructionList->instructions = tmp;
+        instructionList->capacity = newCap;
+    }
+
+    Instruction* ins = &instructionList->instructions[instructionList->count];
+    ins->operation = operation;
+    ins->pid  = pid;
+    ins->size = size;
+    ins->ptr  = ptr;
+    ins->line = instructionList->count + 1;
+    instructionList->count++;
+    return 0;
+}
+
+void freeInstructionList(InstructionList* instructionList) {
+    free(instructionList->instructions);
+    instructionList->instructions = NULL;
+    instructionList->count = 0;
+    instructionList->capacity = 0;
+}
 
 
 
@@ -137,26 +169,32 @@ int main(int argc, char *argv[]) {
 
 
     //runFile("ejemplo.txt");
-    printf("Semilla 1\n");
-    rngSeed(1);
-    for(int i = 0; i < 10; i++) {
-        printf("%d ", rngRand(1, 100));
-    }
-    printf("\n");
 
-    printf("Semilla 2\n");
-    rngSeed(2);
-    for(int i = 0; i < 10; i++) {
-        printf("%d ", rngRand(1, 100));
-    }
-    printf("\n");
+    InstructionList list;
+    initInstructionList(&list);
 
-    printf("Semilla 1 de nuevo\n");
-    rngSeed(1);
-    for(int i = 0; i < 10; i++) {
-        printf("%d ", rngRand(1, 100));
+    //Crear las instrucciones
+    for (int i = 0; i < 300; i++) {
+        if (appendInstruction(&list, NEW, 1, 100 + i, i + 1) != 0) {
+            
+            printf("Error de memoria\n");
+            return 1;
+        }
     }
-    printf("\n");
+    appendInstruction(&list, USE, 1, 0, 5);
+    appendInstruction(&list, KILL, 1, 0, 0);
 
+    printf("count=%d capacity=%d\n", list.count, list.capacity);
+    printf("primera: op=%d pid=%d size=%d ptr=%d line=%d\n",
+           list.instructions[0].operation, list.instructions[0].pid,
+           list.instructions[0].size, list.instructions[0].ptr,
+           list.instructions[0].line);
+    printf("ultima: op=%d pid=%d line=%d\n",
+           list.instructions[list.count - 1].operation,
+           list.instructions[list.count - 1].pid,
+           list.instructions[list.count - 1].line);
+
+    freeInstructionList(&list);
+    printf("tras free: count=%d ptr=%p\n", list.count, (void*)list.instructions);
     return 0;
 }
