@@ -21,7 +21,7 @@ typedef struct Instruction {
     int line;
 } Instruction;
 
-//Random
+//Semilla y random
 static void rngSeed(unsigned int seed) {
     srand(seed);
 }
