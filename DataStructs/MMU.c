@@ -11,6 +11,7 @@
 #include "../Algorithms/SecondChance.h"
 #include "../Algorithms/LRU.h"
 #include "../Algorithms/LFU.h"
+#include "../Algorithms/OPT.h"
 
 
 
@@ -75,7 +76,7 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     }
 
     //Selección de RAM
-    if(algID == 5) {
+    if(algID == 1) {
         mmu->actualTimeMoment = 0;
         mmu->sizeDefault = 255;
         mmu->futurePages = (NodePage**) malloc(mmu->sizeDefault* sizeof(NodePage));
@@ -84,11 +85,10 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
         }
     }
 
-    if(algID == 2 || algID == 3 || algID == 4 || algID == 5) {
-        Queue * queue = (Queue*) malloc(sizeof(Queue));
-        inicializar(queue);
-        mmu->MemoryRAM =queue; 
-    }
+    Queue * queue = (Queue*) malloc(sizeof(Queue));
+    inicializar(queue);
+    mmu->MemoryRAM =queue; 
+
 
     return mmu;
 }
@@ -199,6 +199,7 @@ int predictUse(MMU * self, int logicId) {
 void restoreIdPages(MMU * self) {
     if(self!=NULL) {
         self->nextPageId = 1;
+        self->actualTimeMoment = 0;
     }
 }
 
@@ -255,6 +256,10 @@ int newP(MMU * self, int pid, int size) {
         addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
         addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //SE añade la pagina a la tabla de simbolos
 
+        if(self->algID == 1) { //2 FIFO
+            insertionPageOPT(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self->futurePages, self); //Se añade la página a ram
+        }
+
         if(self->algID == 2) { //2 FIFO
             insertionPageFIFO(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId); //Se añade la página a ram
         }
@@ -271,6 +276,8 @@ int newP(MMU * self, int pid, int size) {
             insertionPageLFU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
         }
 
+        self->actualTimeMoment++; 
+
     }
 
     self->pageTable = combineDLinkedList(self->pageTable, newProcess->pages);
@@ -284,13 +291,16 @@ void useP(MMU * self, int ptr) {
 
         if(nodePage != NULL) {
             while(nodePage->id != -2) {
-
+                self->actualTimeMoment++; //Por revisar
                 if(self->algID == 3) {
                     nodePage->Mark = 1;
                 } 
 
                 if(nodePage->loaded == 0) {
                     switch(self->algID){
+                        case 1:
+                            bringPageToMemoryOPT(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self->futurePages, self);
+                            break;
                         case 2:
                             bringPageToMemoryFIFO(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
                             break;

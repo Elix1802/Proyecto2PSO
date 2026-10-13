@@ -127,15 +127,15 @@ int main() {
 int main() {
     int memory = 1024 * 400;
     int pageSize = 1024 * 4;
-    MMU * mmu = createMMU(5, memory, pageSize);
+    MMU * mmu = createMMU(1, memory, pageSize);
 
     //Sección de opt
-    int Pl_addr = predictNew(mmu,4096);
+    int Pl_addr = predictNew(mmu,12288);
 
-    int P2l_addr = predictNew(mmu,4096);
+    int P2l_addr = predictNew(mmu,12288);
     
-    int P3l_addr = predictNew(mmu,4096);
-    int P4l_addr = predictNew(mmu,4096);
+    int P3l_addr = predictNew(mmu,12288);
+    int P4l_addr = predictNew(mmu,12288);
 
     predictUse(mmu, Pl_addr);
 
@@ -147,10 +147,10 @@ int main() {
 
 
 
-    int l_addr = newP(mmu, 1, 4096);
-    int l_addr2 = newP(mmu, 2, 4096);
-    int l_addr3 = newP(mmu, 3, 4096);
-    int l_addr4 = newP(mmu, 4, 4096);
+    int l_addr = newP(mmu, 1, 12288);
+    int l_addr2 = newP(mmu, 2, 12288);
+    int l_addr3 = newP(mmu, 3, 12288);
+    int l_addr4 = newP(mmu, 4, 12288);
 
     //int l_addr3 = newP(mmu, 2, 9000);
     //int l_addr4 = newP(mmu, 1, 9000);
@@ -188,9 +188,9 @@ int main() {
     //printDiskTableValues(mmu->diskTable);
     printf("\n------------------Kill 3-------------------\n");
 
-    killP(mmu, 1);
-    printQueue(mmu->MemoryRAM);
-    printDiskTableValues(mmu->diskTable);
+    //killP(mmu, 1);
+    //printQueue(mmu->MemoryRAM);
+    //printDiskTableValues(mmu->diskTable);
 
 
 
