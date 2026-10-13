@@ -155,21 +155,25 @@ int main() {
     printf("\n----------------------------------\n");
 
     //deleteP(mmu, l_addr);
-    printf("\n------------------Eliminados-------------------\n");
+    printf("\n------------------Use 2-------------------\n");
     useP(mmu, l_addr);
     printQueue(mmu->MemoryRAM);
     printDiskTableValues(mmu->diskTable);
 
-    printf("Size: %d \n", mmu->pageTable->size);
 
-    printf("\n------------------Eliminados-------------------\n");
+    printf("\n------------------Use 3-------------------\n");
+    useP(mmu, l_addr2);
+    printQueue(mmu->MemoryRAM);
+    printDiskTableValues(mmu->diskTable);
     //printQueue(mmu->MemoryFIFOSC);
     //printDiskTableValues(mmu->diskTable);
+    printf("\n------------------Kill 3-------------------\n");
 
-    printf("\n------------------Obteneindo e imprimiendo-------------------\n");
-    //killP(mmu, 2);
-    for(int i = 0; i<mmu->pageTable->size; i++)
-        printNodePage(getAllNodes(mmu->pageTable)[i]);
+    killP(mmu, 1);
+    printQueue(mmu->MemoryRAM);
+    printDiskTableValues(mmu->diskTable);
+
+
 
     
 
