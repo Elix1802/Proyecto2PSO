@@ -127,9 +127,12 @@ int main() {
 int main() {
     int memory = 1024 * 400;
     int pageSize = 1024 * 4;
-    MMU * mmu = createMMU(2, memory, pageSize);
-    int l_addr = newP(mmu, 2, 9000);
-    int l_addr2 = newP(mmu, 1, 12288);
+    MMU * mmu = createMMU(5, memory, pageSize);
+    int l_addr = newP(mmu, 1, 4096);
+    int l_addr2 = newP(mmu, 2, 4096);
+    int l_addr3 = newP(mmu, 3, 4096);
+    int l_addr4 = newP(mmu, 4, 4096);
+
     //int l_addr3 = newP(mmu, 2, 9000);
     //int l_addr4 = newP(mmu, 1, 9000);
 
@@ -150,11 +153,10 @@ int main() {
     printf("\n----------------------------------\n");
     printDiskTableValues(mmu->diskTable);
     printf("\n----------------------------------\n");
-    printDLinkedList(mmu->pageTable);
 
-    deleteP(mmu, l_addr);
+    //deleteP(mmu, l_addr);
     printf("\n------------------Eliminados-------------------\n");
-
+    useP(mmu, l_addr);
     printQueue(mmu->MemoryRAM);
     printDiskTableValues(mmu->diskTable);
 

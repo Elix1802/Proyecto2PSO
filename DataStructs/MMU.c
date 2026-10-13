@@ -10,6 +10,8 @@
 #include "../Algorithms/FIFO.h"
 #include "../Algorithms/SecondChance.h"
 #include "../Algorithms/LRU.h"
+#include "../Algorithms/LFU.h"
+
 
 
 
@@ -73,7 +75,7 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     }
 
     //Selección de RAM
-    if(algID == 2 || algID == 3 || algID == 4) {
+    if(algID == 2 || algID == 3 || algID == 4 || algID == 5) {
         Queue * queue = (Queue*) malloc(sizeof(Queue));
         inicializar(queue);
         mmu->MemoryRAM =queue; 
@@ -188,6 +190,10 @@ int newP(MMU * self, int pid, int size) {
             insertionPageLRU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
         }
 
+        else if(self->algID == 5) { //LRU
+            insertionPageLFU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
+        }
+
     }
 
     self->pageTable = combineDLinkedList(self->pageTable, newProcess->pages);
@@ -216,11 +222,16 @@ void useP(MMU * self, int ptr) {
                             break;
                         case 4:
                             bringPageToMemoryLRU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            break;
+                        case 5:
+                            bringPageToMemoryLFU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            break;
                         default:
                             break;
                     }   
-                }
+                } else addOneMoreFreq(nodePage);
 
+                
                 nodePage = getNextPtr(nodePage);
             }
         }

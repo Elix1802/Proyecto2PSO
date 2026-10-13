@@ -32,15 +32,15 @@ NodePage* peek(const Queue *cola) {
     return cola->cantidad == 0 ? NULL : cola->datos[cola->frente];
 }
 
-void deleteSpecificElementQueue(Queue *cola, int idPage) {
-    if (cola->cantidad == 0) return;
+NodePage * deleteSpecificElementQueue(Queue *cola, int idPage) {
+    if (cola->cantidad == 0) return NULL;
 
     int i = cola->frente;
     int elementosProcesados = 0;
     int cantidadOriginal = cola->cantidad;
-
+    NodePage *founded = NULL;
     while (elementosProcesados < cantidadOriginal) {
-        NodePage *nodoActual = cola->datos[i];
+        NodePage * nodoActual = cola->datos[i];
 
         if (nodoActual->id == idPage) {
             int actual = i;
@@ -54,11 +54,15 @@ void deleteSpecificElementQueue(Queue *cola, int idPage) {
             cola->cantidad--;
             
             cantidadOriginal--;
+            if(founded == NULL) founded = nodoActual;
+
         } else {
             i = (i + 1) % TAM_MAX;
             elementosProcesados++;
         }
     }
+
+    return founded;
 }
 
 

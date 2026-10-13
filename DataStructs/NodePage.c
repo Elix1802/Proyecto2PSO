@@ -18,6 +18,8 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     nodePage->nextPtr = nextPtr;
     nodePage->pastPtr = pastPtr;
 
+    nodePage->freq = 0;
+
     return nodePage;
 }
 
@@ -54,6 +56,7 @@ void putOnVirtualMemory(NodePage * self, int D_addr) {
     if(self != NULL) {
         self->D_Address = D_addr;
         self->loaded = 0;
+        self->freq = 0;
     }
 }
 
@@ -69,12 +72,18 @@ void addTimeOnNodePage(NodePage * self, int time) {
         self->loaded_T++;
     }
 }
+
+void addOneMoreFreq(NodePage * self) {
+    if(self!=NULL) {
+        self->freq ++;
+    }
+}
 //print
 void printNodePage(NodePage * self) {
     if(self != NULL) {
         int pastNodePageId = (self->pastPtr != NULL) ? self->pastPtr->id : -1;
         int nextNodePageId = (self->nextPtr != NULL) ? self->nextPtr->id : -1;
-        printf("\npageId: %d ; parentId: %d ; loaded: %d ; L_Address: %d ; M_Address: %d ; D_Address: %d; loaded_T: %d ; pastNodePageId : %d ; nextNodePageId : %d \n", self->id, self->parentId, self->loaded, self->L_Address, self->M_Address, self->D_Address, self->loaded_T, pastNodePageId, nextNodePageId);
+        printf("\npageId: %d ; parentId: %d ; loaded: %d ; L_Address: %d ; M_Address: %d ; D_Address: %d; loaded_T: %d ; frequency : %d; pastNodePageId : %d ; nextNodePageId : %d \n", self->id, self->parentId, self->loaded, self->L_Address, self->M_Address, self->D_Address, self->loaded_T, self->freq ,pastNodePageId, nextNodePageId);
         return;
     }
     

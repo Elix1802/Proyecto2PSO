@@ -12,6 +12,7 @@ struct NodePage {
     int Mark;
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;
+    int freq;
 };
 
 typedef struct NodePage NodePage;
@@ -29,6 +30,7 @@ void putNextPtr(NodePage * self, NodePage * nextPtr);
 void putPastPtr(NodePage * self, NodePage * pastPtr);
 void putOnVirtualMemory(NodePage * self, int D_Addr);
 void bringFromDisk(NodePage * self);
+void addOneMoreFreq(NodePage * self);
 
 //print
 void printNodePage(NodePage * self);
