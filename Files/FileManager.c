@@ -22,6 +22,25 @@ typedef struct Instruction {
     int line;
 } Instruction;
 
+typedef struct {
+    int ptr;
+    int pid;
+} ActivePtr;
+
+typedef struct {
+    int P;                 \
+    int nextPtr;                
+
+    ActivePtr* activePtrs;       // ptr activos y su pid
+    int activePtrsCount;        
+
+    int* ptrCountByPid;          // ptr activos de cada proceso
+    int* lastPtrByPid;           
+
+    int* activeProcesses;        // pids que no han hecho kill
+    int activeProcessesCount;
+} GenState;
+
 //Semilla y random
 static void rngSeed(unsigned int seed) {
     srand(seed);
@@ -29,6 +48,37 @@ static void rngSeed(unsigned int seed) {
 
 static int rngRand(int min, int max) {
     return min + rand() % (max - min + 1);
+}
+
+//Generacion de secuencia aleatoria
+static void stateFree(GenState* st) {
+    free(st->activePtrs);
+    free(st->ptrCountByPid);
+    free(st->lastPtrByPid);
+    free(st->activeProcesses);
+    st->activePtrs = NULL;
+    st->ptrCountByPid = NULL;
+    st->lastPtrByPid = NULL;
+    st->activeProcesses = NULL;
+}
+
+// P procesos y N instrucciones
+static int stateInit(GenState* st, int P, int N) {
+    st->P = P;
+    st->nextPtr = 1;
+    st->activePtrsCount = 0;
+    st->activeProcessesCount = 0;
+
+    st->activePtrs       = (ActivePtr*)calloc(N + 1, sizeof(ActivePtr));
+    st->ptrCountByPid    = (int*)calloc(P + 1, sizeof(int));
+    st->lastPtrByPid     = (int*)calloc(P + 1, sizeof(int));
+    st->activeProcesses  = (int*)calloc(P + 1, sizeof(int));
+
+    if (!st->activePtrs || !st->ptrCountByPid || !st->lastPtrByPid || !st->activeProcesses) {
+        stateFree(st);
+        return -1;
+    }
+    return 0;
 }
 
 //Archivo
@@ -172,7 +222,7 @@ int main(int argc, char *argv[]) {
 
     InstructionList list;
     initInstructionList(&list);
-
+    /*
     //Crear las instrucciones
     for (int i = 0; i < 300; i++) {
         if (appendInstruction(&list, NEW, 1, 100 + i, i + 1) != 0) {
@@ -196,5 +246,25 @@ int main(int argc, char *argv[]) {
 
     freeInstructionList(&list);
     printf("tras free: count=%d ptr=%p\n", list.count, (void*)list.instructions);
+    */
+   
+    GenState st;
+    if (stateInit(&st, 3, 20) != 0) {
+        printf("Error de memoria\n");
+        return 1;
+    }
+
+    printf("P=%d nextPtr=%d activePtrsCount=%d activeProcessesCount=%d\n",
+        st.P, st.nextPtr, st.activePtrsCount, st.activeProcessesCount);
+
+    printf("ptrCountByPid:");
+    for (int pid = 0; pid <= 3; pid++) printf(" %d", st.ptrCountByPid[pid]);
+    printf("\nlastPtrByPid:");
+    for (int pid = 0; pid <= 3; pid++) printf(" %d", st.lastPtrByPid[pid]);
+    printf("\n");
+
+    stateFree(&st);
+    printf("tras free: activePtrs=%p\n", (void*)st.activePtrs);
+        
     return 0;
 }
