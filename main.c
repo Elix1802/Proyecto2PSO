@@ -129,7 +129,7 @@ int main() {
     int pageSize = 1024 * 4;
     MMU * mmu = createMMU(1, memory, pageSize);
 
-    //Sección de opt
+    //Sección de opt - Se deben hacer los predicts antes de usar opt normalmente
     int Pl_addr = predictNew(mmu,12288);
 
     int P2l_addr = predictNew(mmu,12288);
@@ -143,7 +143,7 @@ int main() {
 
     predictUse(mmu, P2l_addr);
     printPredicts(mmu);
-    restoreIdPages(mmu);
+    restoreIdPages(mmu); //IMportante restaurar todo antes de opt reinciar todo
 
 
 
