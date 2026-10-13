@@ -182,7 +182,7 @@ static int pickPtr(const GenState* state, int pid){
 
     int randomPointer = rngRand(1, state->ptrCountByPid[pid]);
 
-    for(int i=0; i<state->ptrCountByPid[pid]; i++){
+    for(int i=0; i<state->activePtrsCount; i++){
         if(state->activePtrs[i].pid == pid && --randomPointer == 0){
             return state->activePtrs[i].ptr;
         }
@@ -191,7 +191,7 @@ static int pickPtr(const GenState* state, int pid){
 }
 
 int generateInstructions(unsigned int seed, int P, int N,InstructionList* instructionList){
-    if(instructionList == NULL || P<1){
+    if(instructionList == NULL || P<1 || N < 2 * P){
         return -1;
     }
     initInstructionList(instructionList);
@@ -230,24 +230,26 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
                 stateFree(&state);
                 freeInstructionList(instructionList);
                 return -1;
+            }
 
-            }else{
-                int ptr = pickPtr(&state, pid);
-                if(ptr == 0){
-                    stateFree(&state);
-                    freeInstructionList(instructionList);
-                    return -1;
-                }
-                stateUse(&state, pid, ptr);
-                if(appendInstruction(instructionList, USE, pid, 0, ptr) != 0){
-                    stateFree(&state);
-                    freeInstructionList(instructionList);
-                    return -1;
-                }
+        }else{
+            int ptr = pickPtr(&state, pid);
+            if(ptr == 0){
+                stateFree(&state);
+                freeInstructionList(instructionList);
+                return -1;
+            }
+            stateUse(&state, pid, ptr);
+            if(appendInstruction(instructionList, USE, pid, 0, ptr) != 0){
+                stateFree(&state);
+                freeInstructionList(instructionList);
+                return -1;
             }
         }
+        
+    }
 
-        //Kills
+    //Kills
         for(int pid = 1; pid<=P; pid++){
             stateKill(&state, pid);
             if(appendInstruction(instructionList, KILL, pid, 0, 0) != 0){
@@ -260,7 +262,6 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
 
         stateFree(&state);
         return 0;
-    }
 }
 
 
