@@ -31,6 +31,9 @@ static void rngSeed(unsigned int seed) {
 }
 
 static int rngRand(int min, int max) {
+    if(max <= min){
+        return min;
+    }
     return min + rand() % (max - min + 1);
 }
 
@@ -412,6 +415,9 @@ int main(int argc, char *argv[]) {
     generateInstructions(1, 3, 20, &IL2);
     int copy = (IL1.count == IL2.count) && memcmp(IL1.instructions, IL2.instructions, IL1.count * sizeof(Instruction)) == 0;
     printf("Misma semilla -> igual: %d\n", copy);
+    for(int i = 0; i < IL2.count; i++){
+        printInstruction(&IL2.instructions[i]);
+    }
 
     freeInstructionList(&IL2);
 
@@ -427,7 +433,7 @@ int main(int argc, char *argv[]) {
         printInstruction(&IL2.instructions[i]);
     }
 
-
+    freeInstructionList(&IL2);
     printf("Formato invalido ->%d\n", generateInstructions(1,10,15, &IL2));
 
     freeInstructionList(&IL1);
