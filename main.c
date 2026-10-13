@@ -128,6 +128,25 @@ int main() {
     int memory = 1024 * 400;
     int pageSize = 1024 * 4;
     MMU * mmu = createMMU(5, memory, pageSize);
+
+    //Sección de opt
+    int Pl_addr = predictNew(mmu,4096);
+
+    int P2l_addr = predictNew(mmu,4096);
+    
+    int P3l_addr = predictNew(mmu,4096);
+    int P4l_addr = predictNew(mmu,4096);
+
+    predictUse(mmu, Pl_addr);
+
+    predictUse(mmu, Pl_addr);
+
+    predictUse(mmu, P2l_addr);
+    printPredicts(mmu);
+    restoreIdPages(mmu);
+
+
+
     int l_addr = newP(mmu, 1, 4096);
     int l_addr2 = newP(mmu, 2, 4096);
     int l_addr3 = newP(mmu, 3, 4096);

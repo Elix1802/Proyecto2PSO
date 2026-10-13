@@ -75,6 +75,15 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     }
 
     //Selección de RAM
+    if(algID == 5) {
+        mmu->actualTimeMoment = 0;
+        mmu->sizeDefault = 255;
+        mmu->futurePages = (NodePage**) malloc(mmu->sizeDefault* sizeof(NodePage));
+        for(int i = 0; i< mmu->sizeDefault; i++) {
+            mmu->futurePages[i] = NULL;
+        }
+    }
+
     if(algID == 2 || algID == 3 || algID == 4 || algID == 5) {
         Queue * queue = (Queue*) malloc(sizeof(Queue));
         inicializar(queue);
@@ -154,6 +163,74 @@ static NodePage * appendPageInRam(MMU * self, int pid, int logicalAddress, int f
     self->availableMemory -= self->pageSize;
     return page;
 }
+
+int predictNew(MMU * self, int size) {
+    if(self != NULL) {
+        int numPages = size / self->pageSize + (size % self->pageSize != 0);
+        int l_addr = self->nextPageId; 
+        for(int i = 0; i<numPages; i++) {
+            self->futurePages[self->actualTimeMoment++] = createNodePage(self->nextPageId++, -10, -10, l_addr, -10, -10, -10, NULL, NULL);
+            increaseFuturePredict(self); 
+        }
+
+        return l_addr;
+    }
+
+    return -1;
+}
+
+int predictUse(MMU * self, int logicId) {
+    if(self != NULL) {
+        int i = 0;
+        int lastActualTimeMoment = self->actualTimeMoment;
+
+        for(i = 0; i<lastActualTimeMoment; i++) {
+
+            if(self->futurePages[i]->L_Address == logicId && self->futurePages[i]->Mark == 0) {
+                    NodePage * newPage = createNodePage(self->futurePages[i]->id, -10, -10, logicId, -10, -10, -10, NULL, NULL);
+                    newPage->Mark = 1;
+                    self->futurePages[self->actualTimeMoment++] = newPage;
+                    increaseFuturePredict(self); 
+                }
+        }
+    }
+}
+
+void restoreIdPages(MMU * self) {
+    if(self!=NULL) {
+        self->nextPageId = 1;
+    }
+}
+
+void printPredicts(MMU * self) {
+    if(self != NULL) {
+        int i = 0;
+        int lastActualTimeMoment = self->actualTimeMoment;
+        for(i = 0; i<lastActualTimeMoment; i++) {
+            printNodePage(self->futurePages[i]);
+        }
+    }
+}
+
+void increaseFuturePredict(MMU * self) {
+    if(self->actualTimeMoment >= self->sizeDefault) {
+        int lastTime = self->sizeDefault;
+        self->sizeDefault *=2;
+        NodePage ** temp = (NodePage**) malloc(self->sizeDefault * sizeof(NodePage*));
+        for(int i = 0; i<self->sizeDefault; i++) {
+            if(i<lastTime) temp[i] = self->futurePages[i];
+            else temp[i] = NULL;
+        }
+
+        for(int i = 0; i<lastTime; i++) {
+            destroyNodePage(self->futurePages[i]);
+        }
+
+        free(self->futurePages);
+        self->futurePages = temp;
+    }
+}
+
 
 int newP(MMU * self, int pid, int size) {
     if (self == NULL || size <= 0) return -1;

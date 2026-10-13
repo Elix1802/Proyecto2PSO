@@ -39,6 +39,11 @@ struct MMU {
 
   Queue * MemoryRAM;
 
+  //Predicción del futuro
+  NodePage ** futurePages; //Nodos peones
+  int actualTimeMoment;
+  int sizeDefault; //Tamaño por default del future pages
+
   int nextPtr;
   int nextPageId;
   int nextDiskId;//Id de cada elemento en la memoria virtual
@@ -61,4 +66,10 @@ void useP(MMU * self, int ptr);
 void deleteP(MMU * self, int ptr);
 void killP(MMU * self, int pid);
 
+//Predicts:
+int predictNew(MMU * self, int size);
+int predictUse(MMU * self, int logicId);
+void restoreIdPages(MMU * self);
+void printPredicts(MMU * self);
+void increaseFuturePredict(MMU * self);
 #endif // MMU_H

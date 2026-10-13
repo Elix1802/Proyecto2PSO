@@ -9,7 +9,7 @@ struct NodePage {
     int M_Address;
     int D_Address; //-1 cuando no este en memoria virtual
     int loaded_T; //El tiempo añadido
-    int Mark;
+    int Mark; //Second chance : 1 fue usado 0 no usado | Predicts: 0 fui cargado por new 1 fui cargado por use
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;
     int freq;
