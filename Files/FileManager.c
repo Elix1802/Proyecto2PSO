@@ -226,7 +226,9 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
     for(int i = 0; i < ops; i++){
         int pid = state.activeProcesses[rngRand(0, state.activeProcessesCount -1)];
 
-        if(rngRand(1,100) <= 20){
+        int r = rngRand(1,100);
+        //New 20%
+        if(state.ptrCountByPid[pid] == 0 || r <= 20){
             int size = randomSize();
             int ptr = stateNew(&state, pid);
             if(appendInstruction(instructionList, NEW, pid, size, ptr) != 0){
@@ -235,7 +237,8 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
                 return -1;
             }
 
-        }else{
+        //Use 60%
+        }else if (r <= 80){
             int ptr = pickPtr(&state, pid);
             if(ptr == 0){
                 stateFree(&state);
@@ -244,6 +247,24 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
             }
             stateUse(&state, pid, ptr);
             if(appendInstruction(instructionList, USE, pid, 0, ptr) != 0){
+                stateFree(&state);
+                freeInstructionList(instructionList);
+                return -1;
+            }
+        //Delete %20
+        }else{
+            int ptr =  pickPtr(&state, pid);
+            if(ptr == 0){
+                stateFree(&state);
+                freeInstructionList(instructionList);
+                return -1;
+            }
+            if(stateDelete(&state, pid, ptr) != 0){
+                stateFree(&state);
+                freeInstructionList(instructionList);
+                return -1;
+            }
+            if(appendInstruction(instructionList, DELETE, pid, 0, ptr) != 0){
                 stateFree(&state);
                 freeInstructionList(instructionList);
                 return -1;
