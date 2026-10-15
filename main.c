@@ -1,7 +1,148 @@
 #include <gtk/gtk.h>
+#include <glib/gstdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "Files/FileManager.h"
 
+
 static char *selected_file_path = NULL;
+static char *generated_file_path = NULL;
+
+typedef struct {
+
+    GtkWidget *spinSeed;
+    GtkWidget *cmbProcesses;
+    GtkWidget *cmbOperations;
+    GtkWidget *cmbAlgorithm;
+    GtkWidget *lblAlgName;
+    GtkWidget *btnDownload;
+
+}AppWidgets;
+
+static AppWidgets widgets;
+
+static const char *dropdownText(GtkWidget *dropdown){
+    GObject * item = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(dropdown));
+    if(item == NULL){
+        return NULL;
+    }
+    return gtk_string_object_get_string(GTK_STRING_OBJECT(item));
+}
+
+static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
+    AppWidgets *w = (AppWidgets *)user_data;
+
+    gtk_spin_button_update(GTK_SPIN_BUTTON(w->spinSeed));  
+    unsigned int seed = (unsigned int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->spinSeed));
+
+    const char *pText = dropdownText(w->cmbProcesses);
+    const char *nText = dropdownText(w->cmbOperations);
+    if (pText == NULL || nText == NULL) {
+        g_printerr("Selecciona la cantidad de procesos y de operaciones\n");
+        return;
+    }
+    int P = atoi(pText);
+    int N = atoi(nText);
+
+    InstructionList list;
+    if (generateInstructions(seed, P, N, &list) != 0) {
+        g_printerr("Error generando la secuencia\n");
+        return;
+    }
+
+    g_mkdir_with_parents("Files/Sequences", 0755);
+
+    char fileName[128];
+    snprintf(fileName, sizeof fileName,
+             "Files/Sequences/SecuenciaProcesos-S%u-P%d-N%d.txt", seed, P, N);
+    createFile(fileName, &list);
+
+    freeInstructionList(&list);
+
+    if(!g_file_test(fileName, G_FILE_TEST_IS_REGULAR)){
+        g_print("No se pudo crear el archivo %s\n", fileName);
+        return;
+    }
+
+    g_free(generated_file_path);
+    generated_file_path = g_strdup(fileName);
+
+    if(w->btnDownload){
+        gtk_widget_set_sensitive(w->btnDownload, TRUE);
+    }
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+    GtkAlertDialog *alert = gtk_alert_dialog_new("✅ File created and ready to download");
+    gtk_alert_dialog_show(alert, parent_window);
+    g_object_unref(alert);
+    printf("Archivo generado: %s (semilla: %u, P=%d, N=%d)\n", fileName, seed, P, N);
+
+}
+
+static void showMessage(GtkWindow *parent, const char *message) {
+    GtkAlertDialog *alert = gtk_alert_dialog_new("%s", message);
+    gtk_alert_dialog_show(alert, parent);
+    g_object_unref(alert);
+}
+
+static void on_save_dialog_response(GObject *source, GAsyncResult *result, gpointer user_data) {
+    GtkFileDialog *dialog = GTK_FILE_DIALOG(source);
+    GtkWindow *parent = GTK_WINDOW(user_data);
+    GError *error = NULL;
+
+    GFile *dest = gtk_file_dialog_save_finish(dialog, result, &error);
+    if (dest) {
+        GFile *src = g_file_new_for_path(generated_file_path);
+        GError *copyError = NULL;
+
+        if (g_file_copy(src, dest, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &copyError)) {
+            char *path = g_file_get_path(dest);
+            char *msg = g_strdup_printf("Archivo guardado en:\n%s", path);
+            showMessage(parent, msg);
+            g_free(msg);
+            g_free(path);
+        } else {
+            showMessage(parent, copyError->message);
+            g_error_free(copyError);
+        }
+
+        g_object_unref(src);
+        g_object_unref(dest);
+    } else if (error) {
+        if (!g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED) &&
+            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+            g_printerr("Error al elegir destino: %s\n", error->message);
+        }
+        g_error_free(error);
+    }
+    g_object_unref(dialog);
+}
+
+static void on_download_clicked(GtkButton *button, gpointer user_data) {
+    if (generated_file_path == NULL) return;
+
+    GtkWindow *parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+
+    GtkFileDialog *dialog = gtk_file_dialog_new();
+    gtk_file_dialog_set_title(dialog, "Guardar secuencia generada");
+
+    char *baseName = g_path_get_basename(generated_file_path);
+    gtk_file_dialog_set_initial_name(dialog, baseName);   // nombre sugerido
+    g_free(baseName);
+
+    gtk_file_dialog_save(dialog, parent, NULL, on_save_dialog_response, parent);
+}
+
+
+static void on_algorithm_changed(GObject *dropdown, GParamSpec *pspec, gpointer user_data) {
+    AppWidgets *w = (AppWidgets *)user_data;
+
+    const char *name = dropdownText(GTK_WIDGET(dropdown));
+    if (name == NULL) return;
+
+    char text[64];
+    snprintf(text, sizeof text, "RAM - %s", name);
+    gtk_label_set_text(GTK_LABEL(w->lblAlgName), text);
+}
 
 static void on_file_dialog_response(GObject *source, GAsyncResult *result, gpointer user_data) {
     GtkFileDialog *dialog = GTK_FILE_DIALOG(source);
@@ -33,6 +174,7 @@ static void on_file_dialog_response(GObject *source, GAsyncResult *result, gpoin
             g_error_free(error);
         }
     }
+    g_object_unref(dialog);
 }
 
 static void on_open_button_clicked(GtkButton *button, gpointer user_data) {
@@ -51,10 +193,33 @@ static void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "mainWindow"));
     GtkWidget *open_button = GTK_WIDGET(gtk_builder_get_object(builder, "btnOpenFile"));
     GtkWidget *file_label = GTK_WIDGET(gtk_builder_get_object(builder, "lblDirectory"));
+    GtkWidget *btnCreate = GTK_WIDGET(gtk_builder_get_object(builder,"btnCreateFile"));
+
+    widgets.spinSeed = GTK_WIDGET(gtk_builder_get_object(builder,"spinSeed"));
+    widgets.cmbProcesses = GTK_WIDGET(gtk_builder_get_object(builder, "cmbProcesses"));
+    widgets.cmbOperations = GTK_WIDGET(gtk_builder_get_object(builder, "cmbOperations"));
+    widgets.cmbAlgorithm = GTK_WIDGET(gtk_builder_get_object(builder, "cmbAlgorithm"));
+    widgets.lblAlgName = GTK_WIDGET(gtk_builder_get_object(builder, "lblAlgName"));
+    widgets.btnDownload = GTK_WIDGET(gtk_builder_get_object(builder, "btnDownloadRandomFile"));
+
+    
+    if(btnCreate){
+        g_signal_connect(btnCreate, "clicked", G_CALLBACK(on_create_file_clicked), &widgets);
+    }
+
+    if(widgets.cmbAlgorithm){
+        g_signal_connect(widgets.cmbAlgorithm, "notify::selected", G_CALLBACK(on_algorithm_changed), &widgets);
+        on_algorithm_changed(G_OBJECT(widgets.cmbAlgorithm), NULL, &widgets);
+    }
 
     if (open_button) {
         g_signal_connect(open_button, "clicked", G_CALLBACK(on_open_button_clicked), file_label);
     }
+    if(widgets.btnDownload){
+        gtk_widget_set_sensitive(widgets.btnDownload, FALSE);
+        g_signal_connect(widgets.btnDownload, "clicked", G_CALLBACK(on_download_clicked), NULL);
+    }
+
     
     gtk_window_set_application(GTK_WINDOW(window), app);
     gtk_window_present(GTK_WINDOW(window));
@@ -66,35 +231,6 @@ int main(int argc, char **argv) {
     GtkApplication *app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     
-
-    InstructionList IL1;
-
-    int seed = 17;
-    int P = 10; //Cantidad de Procesos
-    int N = 5000; //Cantidad de Operaciones
-
-    char processessFileName[100];
-    
-    if(generateInstructions(seed, P, N, &IL1) != 0 ){
-        printf("Error generando");
-        return 1;
-    }
-
-    snprintf(processessFileName, sizeof processessFileName, "Files/Sequences/SecuenciaProcesos-S%d-P%d-N%d", seed, P, N);
-
-
-    createFile(processessFileName, &IL1);
-
-    freeInstructionList(&IL1);
-    /*  
-    printf("\n---EjemploProfe---\n");
-    runFile("Files/Sequences/ejemplo.txt");
-
-    printf("\n---Semilla %d desde archivo ---\n", seed);
-    printf("%s \n \n",processessFileName);
-    runFile(processessFileName);
-    */
-
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
     return status;

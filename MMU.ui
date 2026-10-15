@@ -26,7 +26,17 @@
               </object>
             </child>
             <child>
-              <object class="GtkSpinButton" id="txtSeed"/>
+              <object class="GtkAdjustment" id="adjSeed">
+                <property name="lower">0</property>
+                <property name="upper">999</property>
+                <property name="step-increment">1</property>
+                <property name="page-increment">100</property>
+                <property name="value">1</property>
+              </object>
+              <object class="GtkSpinButton" id="spinSeed">
+                 <property name="adjustment">adjSeed</property>
+                  <property name="numeric">True</property>
+              </object>
             </child>
             <child>
               <object class="GtkLabel">
@@ -164,7 +174,7 @@
             <child>
               <object class="GtkLabel" id="lblAlgName">
                 <property name="halign">start</property>
-                <property name="label">RAM - [???]</property>
+                <property name="label">RAM - [???] </property>
               </object>
             </child>
             <child>
