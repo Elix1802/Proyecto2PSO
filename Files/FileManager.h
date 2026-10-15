@@ -26,6 +26,7 @@ typedef struct {
 //N: cantidad de instrucciones a generar
 int generateInstructions(unsigned int seed, int P, int N, InstructionList* instructionList);
 int runFile(char *filename);
+int createFile(char *filename, InstructionList* instructionList);
 
 void initInstructionList(InstructionList* instructionList);
 void addInstruction(InstructionList* instructionList, Instruction instruction);

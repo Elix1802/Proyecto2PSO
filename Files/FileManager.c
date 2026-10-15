@@ -411,6 +411,54 @@ int runFile(char *filename) {
     return 1;
 }
 
+int createFile(char *filename, InstructionList *instructionList){
+    if(filename == NULL || instructionList == NULL){
+        return -1;
+    }
+
+    FILE* file = fopen(filename, "w");
+    if(file == NULL){
+        return -1;
+    }
+
+    for(int i = 0; i < instructionList->count; i++){
+        const Instruction* ins = &instructionList->instructions[i];
+        int writeResult;
+        switch (ins->operation)
+        {
+        case NEW:
+            writeResult = fprintf(file, "new(%d,%d)\n",ins->pid, ins->size);
+            break;
+
+        case USE:
+            writeResult = fprintf(file, "use(%d)\n",ins->ptr);
+            break;
+
+        case DELETE:
+            writeResult = fprintf(file, "delete(%d)\n",ins->ptr);
+            break;
+
+        case KILL:
+            writeResult = fprintf(file, "kill(%d)\n",ins->pid);
+            break;
+        
+        default:
+            writeResult = -1;
+            break;
+        }
+        if(writeResult < 0){
+            fclose(file);
+            return -1;
+        }
+
+    }
+
+    if(fclose(file) != 0){
+        return -1;
+    }
+    
+    return 0;
+}
 
 
 
@@ -418,49 +466,37 @@ int runFile(char *filename) {
 
 
 int main(int argc, char *argv[]) {
-
-
     //runFile("ejemplo.txt");
-    InstructionList IL1, IL2;
+    InstructionList IL1;
 
-    if(generateInstructions(1, 3, 20, &IL1) != 0 ){
+    int seed = 67;
+    int P = 3; //Cantidad de Procesos
+    int N = 20; //Cantidad de Operaciones
+
+    char processessFileName[50];
+    
+    if(generateInstructions(seed, P, N, &IL1) != 0 ){
         printf("Error generando");
         return 1;
     }
 
-    printf("count=%d\n", IL1.count);
+    printf("---Semilla %d---\n", seed);
     for(int i = 0; i < IL1.count; i++){
         printInstruction(&IL1.instructions[i]);
     }
 
-    generateInstructions(1, 3, 20, &IL2);
-    int copy = (IL1.count == IL2.count) && memcmp(IL1.instructions, IL2.instructions, IL1.count * sizeof(Instruction)) == 0;
-    printf("Misma semilla -> igual: %d\n", copy);
-    for(int i = 0; i < IL2.count; i++){
-        printInstruction(&IL2.instructions[i]);
-    }
-
-    freeInstructionList(&IL2);
+    snprintf(processessFileName, sizeof processessFileName, "SecuenciaProcesos-S%d-P%d-N%d", seed, P, N);
 
 
-    printf("//////////////////Otra semilla/////////\n");
-
-    generateInstructions(2, 9, 30, &IL2);
-
-    copy = (IL1.count == IL2.count) && memcmp(IL1.instructions, IL2.instructions, IL1.count * sizeof(Instruction)) == 0;
-    printf("Otra semilla -> igual: %d\n", copy);
-    printf("count=%d\n", IL2.count);
-    for(int i = 0; i < IL2.count; i++){
-        printInstruction(&IL2.instructions[i]);
-    }
-
-    freeInstructionList(&IL2);
-    printf("Formato invalido ->%d\n", generateInstructions(1,10,15, &IL2));
+    createFile(processessFileName, &IL1);
 
     freeInstructionList(&IL1);
+
+    printf("\n---EjemploProfe---\n");
+    runFile("ejemplo.txt");
+
+    printf("\n---Semilla %d desde archivo ---\n", seed);
+    runFile(processessFileName);
     
-
-
-        
     return 0;
 }
