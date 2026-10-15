@@ -15,6 +15,7 @@
         <property name="margin-top">15</property>
         <property name="orientation">vertical</property>
         <property name="spacing">12</property>
+        
         <child>
           <object class="GtkBox">
             <property name="margin-bottom">2</property>
@@ -25,7 +26,87 @@
               </object>
             </child>
             <child>
-              <object class="GtkText" id="txtSeed"/>
+              <object class="GtkSpinButton" id="txtSeed"/>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Processes: </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDropDown" id="cmbProcesses">
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item>10</item>
+                      <item>50</item>
+                      <item>100</item>
+                    </items>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Operations: </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDropDown" id="cmbOperations">
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item>500</item>
+                      <item>1000</item>
+                      <item>5000</item>
+                    </items>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="spacing">16</property>
+            <child>
+              <object class="GtkButton" id="btnCreateFile">
+                <property name="label">❓ Create Random File</property>
+                <style>
+                  <class name="btnCreateFile"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnDownloadRandomFile">
+                <property name="label">⬇️ Download Generated File</property>
+                <style>
+                  <class name="btnCreateFile"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator"/>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="spacing">16</property>
+            <child>
+              <object class="GtkButton" id="btnOpenFile">
+                <property name="label">📁 Select File</property>
+                <style>
+                  <class name="btnOpenFile"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="lblDirectory">
+                <property name="label">No file selected</property>
+              </object>
             </child>
           </object>
         </child>
@@ -54,25 +135,7 @@
             </child>
           </object>
         </child>
-        <child>
-          <object class="GtkBox">
-            <property name="margin-bottom">2</property>
-            <property name="spacing">16</property>
-            <child>
-              <object class="GtkButton" id="btnOpenFile">
-                <property name="label">📁 Select File</property>
-                <style>
-                  <class name="btnOpenFile"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel" id="lblDirectory">
-                <property name="label">No file selected</property>
-              </object>
-            </child>
-          </object>
-        </child>
+
         <child>
           <object class="GtkSeparator"/>
         </child>

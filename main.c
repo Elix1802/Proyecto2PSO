@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include "Files/FileManager.h"
 
 static char *selected_file_path = NULL;
 
@@ -15,7 +16,11 @@ static void on_file_dialog_response(GObject *source, GAsyncResult *result, gpoin
 
         selected_file_path = g_file_get_path(file);
         char *filename = g_file_get_basename(file);
-        
+        printf("-------Ejecutando-------------------\n");
+        printf("selected_file_path: %s \n", selected_file_path);
+        runFile(selected_file_path);
+
+
         gtk_label_set_text(label, filename);
 		g_free(filename);
 		
@@ -60,6 +65,36 @@ static void activate(GtkApplication *app, gpointer user_data) {
 int main(int argc, char **argv) {
     GtkApplication *app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+    
+
+    InstructionList IL1;
+
+    int seed = 17;
+    int P = 10; //Cantidad de Procesos
+    int N = 5000; //Cantidad de Operaciones
+
+    char processessFileName[100];
+    
+    if(generateInstructions(seed, P, N, &IL1) != 0 ){
+        printf("Error generando");
+        return 1;
+    }
+
+    snprintf(processessFileName, sizeof processessFileName, "Files/Sequences/SecuenciaProcesos-S%d-P%d-N%d", seed, P, N);
+
+
+    createFile(processessFileName, &IL1);
+
+    freeInstructionList(&IL1);
+    /*  
+    printf("\n---EjemploProfe---\n");
+    runFile("Files/Sequences/ejemplo.txt");
+
+    printf("\n---Semilla %d desde archivo ---\n", seed);
+    printf("%s \n \n",processessFileName);
+    runFile(processessFileName);
+    */
+
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
     return status;
