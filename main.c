@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "DataStructs/MMU.h"
 #include "Files/FileManager.h"
-char rutaSequencias[9999];
 
 int main(void) {
     InstructionList IL1;
@@ -11,7 +10,7 @@ int main(void) {
     int P = 3; //Cantidad de Procesos
     int N = 20; //Cantidad de Operaciones
 
-    char processessFileName[50];
+    char processessFileName[100];
     
     if(generateInstructions(seed, P, N, &IL1) != 0 ){
         printf("Error generando");
@@ -32,7 +31,5 @@ int main(void) {
     printf("%s \n \n",processessFileName);
     runFile(processessFileName);
     
-    return 0;
-
     return 0;
 }
