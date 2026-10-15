@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "FileManager.h"
+#include <limits.h>
 
 
 //Structs
@@ -415,7 +416,6 @@ int createFile(char *filename, InstructionList *instructionList){
     if(filename == NULL || instructionList == NULL){
         return -1;
     }
-
     FILE* file = fopen(filename, "w");
     if(file == NULL){
         return -1;
@@ -465,7 +465,7 @@ int createFile(char *filename, InstructionList *instructionList){
 
 
 
-int main(int argc, char *argv[]) {
+int mainPruebas(int argc, char *argv[]) {
     //runFile("ejemplo.txt");
     InstructionList IL1;
 
