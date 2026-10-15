@@ -8,15 +8,20 @@
 static char *selected_file_path = NULL;
 static char *generated_file_path = NULL;
 
-typedef struct {
 
+static GtkWidget *ramOptArea = NULL;
+static GtkWidget *ramAlgArea = NULL;
+static int ramOptFrames[100];
+static int ramAlgFrames[100];
+
+
+typedef struct {
     GtkWidget *spinSeed;
     GtkWidget *cmbProcesses;
     GtkWidget *cmbOperations;
     GtkWidget *cmbAlgorithm;
     GtkWidget *lblAlgName;
     GtkWidget *btnDownload;
-
 }AppWidgets;
 
 static AppWidgets widgets;
@@ -186,6 +191,92 @@ static void on_open_button_clicked(GtkButton *button, gpointer user_data) {
 
     gtk_file_dialog_open(dialog, parent_window, NULL, on_file_dialog_response, label);
 }
+static void pidColor(int pid, double *r, double *g, double *b) {
+    double h = pid * 0.61803398875;
+    h -= (int)h;
+    h *= 6.0;
+    double s = 0.35, v = 0.95;
+    int i = (int)h;
+    double f = h - i;
+    double p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+
+    switch (i % 6) {
+        case 0:  *r = v; *g = t; *b = p; break;
+        case 1:  *r = q; *g = v; *b = p; break;
+        case 2:  *r = p; *g = v; *b = t; break;
+        case 3:  *r = p; *g = q; *b = v; break;
+        case 4:  *r = t; *g = p; *b = v; break;
+        default: *r = v; *g = p; *b = q; break;
+    }
+}
+
+static void drawRamBar(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
+    const int *frames = (const int *)data;
+
+    for (int i = 0; i < 100; i++) {
+        int x0 = (int)((double)i * width / 100 + 0.5);
+        int x1 = (int)((double)(i + 1) * width / 100 + 0.5);
+
+        if (frames[i] == 0) {
+            cairo_set_source_rgb(cr, 1, 1, 1);
+        } else {
+            double r, g, b;
+            pidColor(frames[i], &r, &g, &b);
+            cairo_set_source_rgb(cr, r, g, b);
+        }
+        cairo_rectangle(cr, x0, 0, x1 - x0, height);
+        cairo_fill(cr);
+    }
+
+    cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
+    cairo_set_line_width(cr, 1);
+    for (int i = 1; i < 100; i++) {
+        int x = (int)((double)i * width / 100 + 0.5);
+        cairo_move_to(cr, x + 0.5, 0);
+        cairo_line_to(cr, x + 0.5, height);
+    }
+    cairo_stroke(cr);
+
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_rectangle(cr, 0.5, 0.5, width - 1, height - 1);
+    cairo_stroke(cr);
+}
+
+static gboolean onRamQueryTooltip(GtkWidget *widget, int x, int y, gboolean keyboard,
+                                  GtkTooltip *tooltip, gpointer data) {
+    const int *frames = (const int *)data;
+    int width = gtk_widget_get_width(widget);
+    if (width <= 0) return FALSE;
+
+    int i = x * 100 / width;
+    if (i < 0 || i >= 100) return FALSE;
+
+    char text[64];
+    if (frames[i] == 0) {
+        snprintf(text, sizeof text, "Marco %d: libre", i);
+    } else {
+        snprintf(text, sizeof text, "Marco %d: proceso %d", i, frames[i]);
+    }
+    gtk_tooltip_set_text(tooltip, text);
+    return TRUE;
+}
+
+static void ramBarSetup(GtkWidget *area, int *frames) {
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), drawRamBar, frames, NULL);
+    gtk_widget_set_has_tooltip(area, TRUE);
+    g_signal_connect(area, "query-tooltip", G_CALLBACK(onRamQueryTooltip), frames);
+}
+
+static void ramBarUpdate(GtkWidget *area, int *dest, const int *src) {
+    for (int i = 0; i < 100; i++) {
+        dest[i] = src[i];
+    }
+    gtk_widget_queue_draw(area);
+}
+
+
+
+
 
 static void activate(GtkApplication *app, gpointer user_data) {
     GtkBuilder *builder = gtk_builder_new_from_file("View/MMU.ui");
@@ -201,6 +292,17 @@ static void activate(GtkApplication *app, gpointer user_data) {
     widgets.cmbAlgorithm = GTK_WIDGET(gtk_builder_get_object(builder, "cmbAlgorithm"));
     widgets.lblAlgName = GTK_WIDGET(gtk_builder_get_object(builder, "lblAlgName"));
     widgets.btnDownload = GTK_WIDGET(gtk_builder_get_object(builder, "btnDownloadRandomFile"));
+
+    ramOptArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramOptArea"));
+    ramAlgArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramAlgArea"));
+
+    if(ramOptArea && ramAlgArea){
+        ramBarSetup(ramOptArea, ramOptFrames);
+        ramBarSetup(ramAlgArea, ramAlgFrames);
+
+    }else{
+        g_printerr("drawingAreas not found");
+    }
 
     
     if(btnCreate){
