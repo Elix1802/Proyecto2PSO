@@ -124,7 +124,24 @@ static void on_save_dialog_response(GObject *source, GAsyncResult *result, gpoin
 }
 
 static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_data) {
-  g_print("Start Simulation");
+
+  
+  GtkLabel *label = GTK_LABEL(user_data);
+  
+  AppWidgets *w = (AppWidgets *)user_data;
+
+  if (selected_file_path == NULL){
+    g_print("No hay archivo: Start Simulation\n");
+  
+  }
+  else{
+    g_print("//////////////////Start Simulation//////////////");
+    printf("-------Ejecutando-------------------\n");
+    printf("selected_file_path: %s \n", selected_file_path);
+    runFile(selected_file_path);
+    g_print("//////////////////Simulation Finished//////////////");
+    
+  }
 }
 
 static void on_download_clicked(GtkButton *button, gpointer user_data) {
@@ -167,9 +184,7 @@ static void on_file_dialog_response(GObject *source, GAsyncResult *result, gpoin
 
         selected_file_path = g_file_get_path(file);
         char *filename = g_file_get_basename(file);
-        printf("-------Ejecutando-------------------\n");
-        printf("selected_file_path: %s \n", selected_file_path);
-        runFile(selected_file_path);
+        
 
 
         gtk_label_set_text(label, filename);
