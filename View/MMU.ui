@@ -155,7 +155,7 @@
             <property name="spacing">4</property>
             <child>
               <object class="GtkLabel">
-                <property name="halign">start</property>
+                <property name="halign">center</property>
                 <property name="label">RAM - OPT</property>
               </object>
             </child>
@@ -173,7 +173,7 @@
             <property name="spacing">4</property>
             <child>
               <object class="GtkLabel" id="lblAlgName">
-                <property name="halign">start</property>
+                <property name="halign">center</property>
                 <property name="label">RAM - [???] </property>
               </object>
             </child>
