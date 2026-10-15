@@ -22,6 +22,7 @@ typedef struct {
     GtkWidget *cmbAlgorithm;
     GtkWidget *lblAlgName;
     GtkWidget *btnDownload;
+    GtkWidget *btnStartSimulation;
 }AppWidgets;
 
 static AppWidgets widgets;
@@ -122,6 +123,10 @@ static void on_save_dialog_response(GObject *source, GAsyncResult *result, gpoin
     g_object_unref(dialog);
 }
 
+static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_data) {
+  g_print("Start Simulation");
+}
+
 static void on_download_clicked(GtkButton *button, gpointer user_data) {
     if (generated_file_path == NULL) return;
 
@@ -131,7 +136,7 @@ static void on_download_clicked(GtkButton *button, gpointer user_data) {
     gtk_file_dialog_set_title(dialog, "Guardar secuencia generada");
 
     char *baseName = g_path_get_basename(generated_file_path);
-    gtk_file_dialog_set_initial_name(dialog, baseName);   // nombre sugerido
+    gtk_file_dialog_set_initial_name(dialog, baseName);   
     g_free(baseName);
 
     gtk_file_dialog_save(dialog, parent, NULL, on_save_dialog_response, parent);
@@ -292,6 +297,8 @@ static void activate(GtkApplication *app, gpointer user_data) {
     widgets.cmbAlgorithm = GTK_WIDGET(gtk_builder_get_object(builder, "cmbAlgorithm"));
     widgets.lblAlgName = GTK_WIDGET(gtk_builder_get_object(builder, "lblAlgName"));
     widgets.btnDownload = GTK_WIDGET(gtk_builder_get_object(builder, "btnDownloadRandomFile"));
+    
+    widgets.btnStartSimulation = GTK_WIDGET(gtk_builder_get_object(builder, "btnStartSimulation"));
 
     ramOptArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramOptArea"));
     ramAlgArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramAlgArea"));
@@ -317,6 +324,11 @@ static void activate(GtkApplication *app, gpointer user_data) {
     if (open_button) {
         g_signal_connect(open_button, "clicked", G_CALLBACK(on_open_button_clicked), file_label);
     }
+    
+    if (widgets.btnStartSimulation) {
+        g_signal_connect(widgets.btnStartSimulation, "clicked", G_CALLBACK(on_start_simulation_button_clicked), NULL);
+    }
+    
     if(widgets.btnDownload){
         gtk_widget_set_sensitive(widgets.btnDownload, FALSE);
         g_signal_connect(widgets.btnDownload, "clicked", G_CALLBACK(on_download_clicked), NULL);
