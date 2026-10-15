@@ -188,7 +188,7 @@ static void on_open_button_clicked(GtkButton *button, gpointer user_data) {
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
-    GtkBuilder *builder = gtk_builder_new_from_file("MMU.ui");
+    GtkBuilder *builder = gtk_builder_new_from_file("View/MMU.ui");
     
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "mainWindow"));
     GtkWidget *open_button = GTK_WIDGET(gtk_builder_get_object(builder, "btnOpenFile"));
