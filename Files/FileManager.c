@@ -465,7 +465,7 @@ int createFile(char *filename, InstructionList *instructionList){
 
 
 
-int mainPruebas(int argc, char *argv[]) {
+int mainPruebas() {
     //runFile("ejemplo.txt");
     InstructionList IL1;
 
