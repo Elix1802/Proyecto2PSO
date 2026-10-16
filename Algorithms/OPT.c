@@ -41,7 +41,7 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
     }
 
     NodePage * oldestNode = NULL;
-    if(stack->size > 0 && idOldest != -1) {
+    if(stack->size > 0 && idOldest == -1) {
         int lastId = popStack(stack);
         oldestNode = deleteSpecificElementQueue(Memory,lastId);
 
