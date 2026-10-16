@@ -59,6 +59,7 @@ typedef struct {
     GtkAdjustment *vadj;
     const PageRow *rows;     
     int            count;
+    char           title[16];
 } PageTable;
 
 static const char  *COL_TITLES[8] = {"PAGE ID", "PID", "LOADED", "L-ADDR", "M-ADDR", "D-ADDR", "LOADED-T", "MARK"};
@@ -156,12 +157,14 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
     cairo_restore(cr);
 
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, 0, 0, width, 26);
+    cairo_rectangle(cr, 0, 0, width, 52);
     cairo_fill(cr);
 
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12);
     cairo_set_source_rgb(cr, 0, 0, 0);
+
+    drawCenteredText(cr, t->title, 0, 0, width, 26);
     for (int c = 0; c < 8; c++) {
         drawCenteredText(cr, COL_TITLES[c], colX[c], 0, colX[c + 1] - colX[c], 26);
     }
@@ -181,7 +184,7 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
 }
 
 static void updateScroll(PageTable *t, int height) {
-    double viewport = (height > 26) ? height - 26 : 0;
+    double viewport = (height > 52) ? height - 52 : 0;
     double content  = (double)t->count * 22;
     double upper    = (content > viewport) ? content : viewport;
 
@@ -226,6 +229,11 @@ static PageTable *pageTableNew(void) {
     return t;
 }
 
+static void pageTableSetTitle(PageTable *table, const char *title){
+    snprintf(table->title, sizeof(table->title), "%s", title)
+
+    gtk_widget_queue_draw(table->area);
+}
 static void pageTableSetRows(PageTable *t, const PageRow *rows, int count) {
     t->rows = rows;
     t->count = count;
@@ -371,6 +379,11 @@ static void on_algorithm_changed(GObject *dropdown, GParamSpec *pspec, gpointer 
     char text[64];
     snprintf(text, sizeof text, "RAM - %s", name);
     gtk_label_set_text(GTK_LABEL(w->lblAlgName), text);
+
+    if(tableAlg){
+        char title[16];
+        snprintf(title, sizeof(title), "MMU - %s", name);
+    }
 }
 
 static void on_file_dialog_response(GObject *source, GAsyncResult *result, gpointer user_data) {
@@ -533,6 +546,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     if (boxOpt && boxAlg) {
         tableOpt = pageTableNew();
         tableAlg = pageTableNew();
+        pageTableSetTitle(tableOpt, "MMU - OPT")
         gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
         gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
 
