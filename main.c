@@ -131,7 +131,11 @@ static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_
   AppWidgets *w = (AppWidgets *)user_data;
 
   if (selected_file_path == NULL){
-    g_print("No hay archivo: Start Simulation\n");
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+    GtkAlertDialog *alert = gtk_alert_dialog_new("⚠️ Please select or create a file");
+    gtk_alert_dialog_show(alert, parent_window);
+    g_object_unref(alert);
+
   
   }
   else{
@@ -140,7 +144,6 @@ static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_
     printf("selected_file_path: %s \n", selected_file_path);
     runFile(selected_file_path);
     g_print("//////////////////Simulation Finished//////////////");
-    
   }
 }
 
