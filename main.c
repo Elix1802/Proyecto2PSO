@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include <glib/gstdio.h>
+#include <cairo.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "Files/FileManager.h"
@@ -16,7 +17,42 @@ static int ramOptFrames[100];
 static int ramAlgFrames[100];
 
 
+typedef struct {
+    int pid;
+    int ptr;
+    int page_id;
+    int in_ram; //1 si está en RAM, 0 si está en virtual 
+    int phys_addres;
+} MMUEntry;
 
+typedef struct _MMUEntryObj MMUEntryObj;
+typedef struct _MMUEntryObjClass MMUEntryObjClass;
+
+
+struct _MMUEntryObj {
+    GObject parent_instance;
+    MMUEntry data;
+};
+
+struct _MMUEntryObjClass {
+    GObjectClass parent_class;
+};
+
+GType mmu_entry_get_type(void) G_GNUC_CONST;
+G_DEFINE_TYPE(MMUEntryObj, mmu_entry_obj, G_TYPE_OBJECT)
+
+static void mmu_entry_obj_init(MMUEntryObj *self) {}
+static void mmu_entry_obj_class_init(MMUEntryObjClass *klass) {}
+
+MMUEntryObj *mmu_entry_obj_new(int pid, int ptr, int page_id, int in_ram, int phys_address) {
+    MMUEntryObj *obj = g_object_new(mmu_entry_get_type(), NULL);
+    obj->data.pid = pid;
+    obj->data.ptr = ptr;
+    obj->data.page_id = page_id;
+    obj->data.in_ram = in_ram;
+    obj->data.phys_address = phys_address;
+    return obj;
+}
 
 typedef struct {
     GtkWidget *spinSeed;
@@ -30,6 +66,48 @@ typedef struct {
 
 static AppWidgets widgets;
 
+
+
+
+
+//Cairo
+extern void pidColor(int pid, double *r, double *g, double *b);
+
+static void draw_mmu_cell_cairo(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    MMUEntryObj *entry = MMU_ENTRY_OBJ(user_data);
+    if (!entry) return;
+
+    if (entry->data.in_ram) {
+        double r, g, b;
+        pidColor(entry->data.pid, &r, &g, &b);
+        cairo_set_source_rgb(cr, r, g, b); 
+    } else {
+        cairo_set_source_rgb(cr, 0.8, 0.8, 0.8); 
+    }
+
+    cairo_rectangle(cr, 2, 2, width - 4, height - 4);
+    cairo_fill(cr);
+
+    cairo_set_source_rgb(cr, 0, 0, 0); 
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 11);
+    
+    char buffer[64];
+    if (entry->data.in_ram) {
+        snprintf(buffer, sizeof(buffer), "PID: %d | Ptr: %d | Pág: %d (RAM - Seg: %d)", 
+                 entry->data.pid, entry->data.ptr, entry->data.page_id, entry->data.phys_address);
+    } else {
+        snprintf(buffer, sizeof(buffer), "PID: %d | Ptr: %d | Pág: %d (Virtual - Disco)", 
+                 entry->data.pid, entry->data.ptr, entry->data.page_id);
+    }
+    
+    cairo_move_to(cr, 10, height / 2 + 4);
+    cairo_show_text(cr, buffer);
+}
+
+
+
+//GTK
 static const char *dropdownText(GtkWidget *dropdown){
     GObject * item = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(dropdown));
     if(item == NULL){
@@ -300,6 +378,63 @@ static void ramBarUpdate(GtkWidget *area, int *dest, const int *src) {
     gtk_widget_queue_draw(area);
 }
 
+//Dibujar la tabla de la simulación
+static GtkWidget* create_mmu_table_widget(GListStore **out_store) {
+    GListStore *store = g_list_store_new(mmu_entry_get_type());
+    *out_store = store;
+
+    GtkNoSelection *selection = gtk_no_selection_new(G_LIST_MODEL(store));
+    GtkWidget *column_view = gtk_column_view_new(GTK_SELECTION_MODEL(selection));
+
+    GtkSignalListItemFactory *factory = gtk_signal_list_item_factory_new();
+    
+    g_signal_connect(factory, "setup", G_CALLBACK(+[](GtkSignalListItemFactory *f, GtkListItem *item) {
+        GtkWidget *drawing_area = gtk_drawing_area_new();
+        gtk_widget_set_size_request(drawing_area, 300, 35);
+        gtk_list_item_set_child(item, drawing_area);
+    }), NULL);
+
+    g_signal_connect(factory, "bind", G_CALLBACK(+[](GtkSignalListItemFactory *f, GtkListItem *item) {
+        GtkWidget *drawing_area = gtk_list_item_get_child(item);
+        MMUEntryObj *entry = MMU_ENTRY_OBJ(gtk_list_item_get_item(item));
+        
+        gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawing_area), 
+                                       (GtkDrawingAreaDrawFunc)draw_mmu_cell_cairo, 
+                                       g_object_ref(entry), 
+                                       (GDestroyNotify)g_object_unref);
+    }), NULL);
+
+    GtkColumnViewColumn *col_status = gtk_column_view_column_new("Estado de Memoria (MMU)", GTK_LIST_ITEM_FACTORY(factory));
+    gtk_column_view_append_column(GTK_COLUMN_VIEW(column_view), col_status);
+
+    GtkWidget *scrolled = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), column_view);
+    gtk_widget_set_vexpand(scrolled, TRUE);
+    gtk_widget_set_hexpand(scrolled, TRUE);
+
+    return scrolled;
+}
+
+//Datos de Prueba para probar la tabla
+static void load_test_data(GListStore *store) {
+    g_list_store_remove_all(store);
+
+    MMUEntryObj *e1 = mmu_entry_obj_new(1, 1, 1, 1, 0); 
+    MMUEntryObj *e2 = mmu_entry_obj_new(1, 1, 2, 1, 1); 
+    MMUEntryObj *e3 = mmu_entry_obj_new(2, 2, 3, 0, 100); 
+    MMUEntryObj *e4 = mmu_entry_obj_new(3, 3, 4, 1, 2); 
+
+    g_list_store_append(store, e1);
+    g_list_store_append(store, e2);
+    g_list_store_append(store, e3);
+    g_list_store_append(store, e4);
+
+    g_object_unref(e1);
+    g_object_unref(e2);
+    g_object_unref(e3);
+    g_object_unref(e4);
+}
+
 
 
 
@@ -332,7 +467,23 @@ static void activate(GtkApplication *app, gpointer user_data) {
         g_printerr("drawingAreas not found");
     }
 
+    GtkWidget *boxMmuOpt = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuOpt"));
+    GtkWidget *boxMmuAlg = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuAlg"));
+
+    if (boxMmuOpt) {
+        GtkWidget *tableOpt = create_mmu_table_widget(&mmuOptStore);
+        gtk_box_append(GTK_BOX(boxMmuOpt), tableOpt);
+        load_test_data(mmuOptStore); 
+    }
+
+    if (boxMmuAlg) {
+        GtkWidget *tableAlg = create_mmu_table_widget(&mmuAlgStore);
+        gtk_box_append(GTK_BOX(boxMmuAlg), tableAlg);
+        load_test_data(mmuAlgStore); 
+    }
+
     
+
     if(btnCreate){
         g_signal_connect(btnCreate, "clicked", G_CALLBACK(on_create_file_clicked), &widgets);
     }
