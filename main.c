@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Files/FileManager.h"
+#include "DataStructs/Simulation.h"
 
 
 static char *selected_file_path = NULL;
@@ -13,6 +14,8 @@ static GtkWidget *ramOptArea = NULL;
 static GtkWidget *ramAlgArea = NULL;
 static int ramOptFrames[100];
 static int ramAlgFrames[100];
+
+
 
 
 typedef struct {
