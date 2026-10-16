@@ -6,6 +6,7 @@
 #include "DataStructs/Simulation.h"
 
 
+
 static char *selected_file_path = NULL;
 static char *generated_file_path = NULL;
 
@@ -37,6 +38,201 @@ static const char *dropdownText(GtkWidget *dropdown){
     }
     return gtk_string_object_get_string(GTK_STRING_OBJECT(item));
 }
+
+//Tabla/////////////////////////////////
+
+
+typedef struct {
+    int pageId;
+    int pid;
+    int loaded;     // 1 = en RAM
+    int lAddr;
+    int mAddr;     
+    int dAddr;      
+    int loadedT;   
+    int mark;
+} PageRow;
+
+typedef struct {
+    GtkWidget     *widget;   
+    GtkWidget     *area;
+    GtkAdjustment *vadj;
+    const PageRow *rows;     
+    int            count;
+} PageTable;
+
+static const char  *COL_TITLES[8] = {"PAGE ID", "PID", "LOADED", "L-ADDR", "M-ADDR", "D-ADDR", "LOADED-T", "MARK"};
+static const double COL_FRAC[8]   = {0.14, 0.10, 0.12, 0.12, 0.12, 0.14, 0.14, 0.12};   
+
+//Definicion de colores a utilizar
+static const double PALETTE[][3] = {
+    {0.78, 0.92, 0.78},   
+    {1.00, 0.93, 0.65},   
+    {0.99, 0.80, 0.84},  
+    {0.78, 0.85, 0.97},   
+    {0.98, 0.80, 0.62},   
+    {0.86, 0.80, 0.94},   
+};
+#define PALETTE_SIZE ((int)(sizeof PALETTE / sizeof PALETTE[0]))
+
+static PageTable *tableOpt = NULL;
+static PageTable *tableAlg = NULL;
+
+static void cellText(const PageRow *r, int col, char *buf, size_t n) {
+    buf[0] = '\0';
+    switch (col) {
+        case 0: snprintf(buf, n, "%d", r->pageId); break;
+        case 1: snprintf(buf, n, "%d", r->pid); break;
+        case 2: if (r->loaded) snprintf(buf, n, "X"); break;
+        case 3: snprintf(buf, n, "%d", r->lAddr); break;
+        case 4: if (r->mAddr >= 0) snprintf(buf, n, "%d", r->mAddr); break;
+        case 5: if (r->dAddr >= 0) snprintf(buf, n, "%d", r->dAddr); break;
+        case 6: if (r->loadedT >= 0) snprintf(buf, n, "%ds", r->loadedT); break;
+        case 7: if (r->mark) snprintf(buf, n, "X"); break;
+    }
+}
+
+static void drawCenteredText(cairo_t *cr, const char *text, double x, double y, double w, double h) {
+    cairo_font_extents_t fe;
+    cairo_text_extents_t te;
+    cairo_font_extents(cr, &fe);
+    cairo_text_extents(cr, text, &te);
+    cairo_move_to(cr, x + (w - te.x_advance) / 2.0, y + (h + fe.ascent - fe.descent) / 2.0);
+    cairo_show_text(cr, text);
+}
+
+static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
+    PageTable *t = (PageTable *)data;
+    double scroll = gtk_adjustment_get_value(t->vadj);
+
+    double colX[8 + 1];
+    colX[0] = 0;
+    for (int c = 0; c < 8; c++) {
+        colX[c + 1] = colX[c] + COL_FRAC[c] * width;
+    }
+
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_paint(cr);
+
+    int first = (int)(scroll / 22);
+    int last  = (int)((scroll + height - 26) / 22);
+    if (first < 0) first = 0;
+    if (last >= t->count) last = t->count - 1;
+
+    cairo_save(cr);
+    cairo_rectangle(cr, 0, 26, width, height - 26);
+    cairo_clip(cr);
+
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 12);
+
+    for (int i = first; i <= last; i++) {
+        const PageRow *r = &t->rows[i];
+        double y = 26 + i * 22 - scroll;
+
+        const double *color = PALETTE[r->pid % PALETTE_SIZE];
+        cairo_set_source_rgb(cr, color[0], color[1], color[2]);
+        cairo_rectangle(cr, 0, y, width, 22);
+        cairo_fill(cr);
+
+        cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
+        for (int c = 0; c < 8; c++) {
+            char buf[32];
+            cellText(r, c, buf, sizeof buf);
+            if (buf[0] != '\0') {
+                drawCenteredText(cr, buf, colX[c], y, colX[c + 1] - colX[c], 22);
+            }
+        }
+    }
+
+    cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
+    cairo_set_line_width(cr, 1);
+    for (int i = first; i <= last; i++) {
+        double y = 26 + (i + 1) * 22 - scroll - 0.5;
+        cairo_move_to(cr, 0, y);
+        cairo_line_to(cr, width, y);
+    }
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_rectangle(cr, 0, 0, width, 26);
+    cairo_fill(cr);
+
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 12);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    for (int c = 0; c < 8; c++) {
+        drawCenteredText(cr, COL_TITLES[c], colX[c], 0, colX[c + 1] - colX[c], 26);
+    }
+
+    cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
+    for (int c = 1; c < 8; c++) {
+        cairo_move_to(cr, colX[c] + 0.5, 0);
+        cairo_line_to(cr, colX[c] + 0.5, height);
+    }
+    cairo_move_to(cr, 0, 26 - 0.5);
+    cairo_line_to(cr, width, 26 - 0.5);
+    cairo_stroke(cr);
+
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_rectangle(cr, 0.5, 0.5, width - 1, height - 1);
+    cairo_stroke(cr);
+}
+
+static void updateScroll(PageTable *t, int height) {
+    double viewport = (height > 26) ? height - 26 : 0;
+    double content  = (double)t->count * 22;
+    double upper    = (content > viewport) ? content : viewport;
+
+    gtk_adjustment_configure(t->vadj, gtk_adjustment_get_value(t->vadj),
+                             0, upper, 22, viewport * 0.9, viewport);
+}
+
+static void onTableResize(GtkDrawingArea *area, int width, int height, gpointer data) {
+    updateScroll((PageTable *)data, height);
+}
+
+static gboolean onTableScroll(GtkEventControllerScroll *ctrl, double dx, double dy, gpointer data) {
+    PageTable *t = (PageTable *)data;
+    gtk_adjustment_set_value(t->vadj, gtk_adjustment_get_value(t->vadj) + dy * 22 * 3);
+    return TRUE;
+}
+
+static PageTable *pageTableNew(void) {
+    PageTable *t = g_new0(PageTable, 1);
+
+    t->area = gtk_drawing_area_new();
+    gtk_widget_set_hexpand(t->area, TRUE);
+    gtk_widget_set_vexpand(t->area, TRUE);
+    gtk_widget_set_size_request(t->area, 420, 300);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(t->area), drawTable, t, NULL);
+    g_signal_connect(t->area, "resize", G_CALLBACK(onTableResize), t);
+
+    t->vadj = gtk_adjustment_new(0, 0, 1, 22, 22 * 5, 1);
+    g_signal_connect_swapped(t->vadj, "value-changed", G_CALLBACK(gtk_widget_queue_draw), t->area);
+
+    GtkEventController *scroll = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+    g_signal_connect(scroll, "scroll", G_CALLBACK(onTableScroll), t);
+    gtk_widget_add_controller(t->area, scroll);
+
+    GtkWidget *bar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, t->vadj);
+
+    t->widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_hexpand(t->widget, TRUE);
+    gtk_widget_set_vexpand(t->widget, TRUE);
+    gtk_box_append(GTK_BOX(t->widget), t->area);
+    gtk_box_append(GTK_BOX(t->widget), bar);
+    return t;
+}
+
+static void pageTableSetRows(PageTable *t, const PageRow *rows, int count) {
+    t->rows = rows;
+    t->count = count;
+    updateScroll(t, gtk_widget_get_height(t->area));
+    gtk_widget_queue_draw(t->area);
+}
+
 
 static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
     AppWidgets *w = (AppWidgets *)user_data;
@@ -331,6 +527,19 @@ static void activate(GtkApplication *app, gpointer user_data) {
     }else{
         g_printerr("drawingAreas not found");
     }
+
+    GtkWidget *boxOpt = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuOpt"));
+    GtkWidget *boxAlg = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuAlg"));
+    if (boxOpt && boxAlg) {
+        tableOpt = pageTableNew();
+        tableAlg = pageTableNew();
+        gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
+        gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
+
+    } else {
+        g_printerr("No se encontraron boxMmuOpt / boxMmuAlg en el .ui\n");
+    }
+    
 
     
     if(btnCreate){

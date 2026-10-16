@@ -1,7 +1,7 @@
 #ifndef SIMULATION_H
 #define SIMULAATION_H
-#include "Files/FileManager.h"
-#include "DataStructs/MMU.h"
+#include "../Files/FileManager.h"
+#include "MMU.h"
 
 typedef struct {
     MMU *opt;
