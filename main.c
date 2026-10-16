@@ -59,7 +59,7 @@ typedef struct {
     GtkAdjustment *vadj;
     const PageRow *rows;     
     int            count;
-    char           title[16];
+    char           title[30];
 } PageTable;
 
 static const char  *COL_TITLES[8] = {"PAGE ID", "PID", "LOADED", "L-ADDR", "M-ADDR", "D-ADDR", "LOADED-T", "MARK"};
@@ -116,12 +116,12 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
     cairo_paint(cr);
 
     int first = (int)(scroll / 22);
-    int last  = (int)((scroll + height - 26) / 22);
+    int last  = (int)((scroll + height - 52) / 22);
     if (first < 0) first = 0;
     if (last >= t->count) last = t->count - 1;
 
     cairo_save(cr);
-    cairo_rectangle(cr, 0, 26, width, height - 26);
+    cairo_rectangle(cr, 0, 52, width, height - 52);
     cairo_clip(cr);
 
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
@@ -149,7 +149,7 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
     cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
     cairo_set_line_width(cr, 1);
     for (int i = first; i <= last; i++) {
-        double y = 26 + (i + 1) * 22 - scroll - 0.5;
+        double y = 52 + (i + 1) * 22 - scroll - 0.5;
         cairo_move_to(cr, 0, y);
         cairo_line_to(cr, width, y);
     }
@@ -166,16 +166,18 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
 
     drawCenteredText(cr, t->title, 0, 0, width, 26);
     for (int c = 0; c < 8; c++) {
-        drawCenteredText(cr, COL_TITLES[c], colX[c], 0, colX[c + 1] - colX[c], 26);
+        drawCenteredText(cr, COL_TITLES[c], colX[c], 26, colX[c + 1] - colX[c], 26);
     }
 
     cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
     for (int c = 1; c < 8; c++) {
-        cairo_move_to(cr, colX[c] + 0.5, 0);
+        cairo_move_to(cr, colX[c] + 0.5, 26);
         cairo_line_to(cr, colX[c] + 0.5, height);
     }
     cairo_move_to(cr, 0, 26 - 0.5);
     cairo_line_to(cr, width, 26 - 0.5);
+    cairo_move_to(cr, 0, 52 - 0.5);
+    cairo_line_to(cr, width, 52 - 0.5);
     cairo_stroke(cr);
 
     cairo_set_source_rgb(cr, 0, 0, 0);
@@ -230,7 +232,7 @@ static PageTable *pageTableNew(void) {
 }
 
 static void pageTableSetTitle(PageTable *table, const char *title){
-    snprintf(table->title, sizeof(table->title), "%s", title)
+    snprintf(table->title, sizeof(table->title), "%s", title);
 
     gtk_widget_queue_draw(table->area);
 }
@@ -381,8 +383,9 @@ static void on_algorithm_changed(GObject *dropdown, GParamSpec *pspec, gpointer 
     gtk_label_set_text(GTK_LABEL(w->lblAlgName), text);
 
     if(tableAlg){
-        char title[16];
+        char title[30];
         snprintf(title, sizeof(title), "MMU - %s", name);
+        pageTableSetTitle(tableAlg, title);
     }
 }
 
@@ -546,7 +549,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     if (boxOpt && boxAlg) {
         tableOpt = pageTableNew();
         tableAlg = pageTableNew();
-        pageTableSetTitle(tableOpt, "MMU - OPT")
+        pageTableSetTitle(tableOpt, "MMU - OPT");
         gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
         gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
 
