@@ -6,225 +6,248 @@
   <object class="GtkApplicationWindow" id="mainWindow">
     <property name="default-height">750</property>
     <property name="default-width">1100</property>
+    <property name="resizable">true</property>
     <property name="title">MMU</property>
     <child>
-      <object class="GtkBox">
-        <property name="margin-bottom">15</property>
-        <property name="margin-end">15</property>
-        <property name="margin-start">15</property>
-        <property name="margin-top">15</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">12</property>
-        <child>
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">automatic</property>
+        <property name="vscrollbar-policy">automatic</property>
+        <property name="child">
           <object class="GtkBox">
-            <property name="margin-bottom">2</property>
-            <property name="spacing">16</property>
-            <child>
-              <object class="GtkLabel" id="lblDirectory_2">
-                <property name="label">Random Seed: </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkAdjustment" id="adjSeed">
-                <property name="lower">0</property>
-                <property name="page-increment">100</property>
-                <property name="step-increment">1</property>
-                <property name="upper">999</property>
-                <property name="value">1</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkSpinButton" id="spinSeed">
-                <property name="adjustment">adjSeed</property>
-                <property name="numeric">True</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="label">Processes: </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkDropDown" id="cmbProcesses">
-                <property name="model">
-                  <object class="GtkStringList">
-                    <items>
-                      <item>10</item>
-                      <item>50</item>
-                      <item>100</item>
-                    </items>
-                  </object>
-                </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="label">Operations: </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkDropDown" id="cmbOperations">
-                <property name="model">
-                  <object class="GtkStringList">
-                    <items>
-                      <item>500</item>
-                      <item>1000</item>
-                      <item>5000</item>
-                    </items>
-                  </object>
-                </property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="margin-bottom">2</property>
-            <property name="spacing">16</property>
-            <child>
-              <object class="GtkButton" id="btnCreateFile">
-                <property name="label">❓ Create Random File</property>
-                <style>
-                  <class name="btnCreateFile"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="btnDownloadRandomFile">
-                <property name="label">⬇️ Download Generated File</property>
-                <style>
-                  <class name="btnCreateFile"/>
-                </style>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <child>
-              <object class="GtkButton" id="btnStartSimulation">
-                <property name="label">✅ Start Simulation</property>
-                <style>
-                  <class name="btnCreateFile"/>
-                </style>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="margin-bottom">2</property>
-            <property name="spacing">16</property>
-            <child>
-              <object class="GtkButton" id="btnOpenFile">
-                <property name="label">📁 Select File</property>
-                <style>
-                  <class name="btnOpenFile"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel" id="lblDirectory">
-                <property name="label">No file selected</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="margin-bottom">2</property>
-            <property name="spacing">16</property>
-            <child>
-              <object class="GtkLabel" id="lblDirectory_3">
-                <property name="label">Algorithm: </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkDropDown" id="cmbAlgorithm">
-                <property name="model">
-                  <object class="GtkStringList">
-                    <items>
-                      <item>FIFO</item>
-                      <item>Second Chance</item>
-                      <item>LRU</item>
-                      <item>LFU</item>
-                    </items>
-                  </object>
-                </property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkBox">
+            <property name="margin-bottom">15</property>
+            <property name="margin-end">15</property>
+            <property name="margin-start">15</property>
+            <property name="margin-top">15</property>
             <property name="orientation">vertical</property>
-            <property name="spacing">4</property>
+            <property name="spacing">12</property>
             <child>
-              <object class="GtkLabel">
-                <property name="halign">center</property>
-                <property name="label">RAM - OPT</property>
+              <object class="GtkBox">
+                <property name="margin-bottom">2</property>
+                <property name="spacing">16</property>
+                <child>
+                  <object class="GtkLabel" id="lblDirectory_2">
+                    <property name="label">Random Seed: </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkAdjustment" id="adjSeed">
+                    <property name="lower">0</property>
+                    <property name="page-increment">100</property>
+                    <property name="step-increment">1</property>
+                    <property name="upper">999</property>
+                    <property name="value">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="spinSeed">
+                    <property name="adjustment">adjSeed</property>
+                    <property name="numeric">True</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Processes: </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkDropDown" id="cmbProcesses">
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>10</item>
+                          <item>50</item>
+                          <item>100</item>
+                        </items>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Operations: </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkDropDown" id="cmbOperations">
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>500</item>
+                          <item>1000</item>
+                          <item>5000</item>
+                        </items>
+                      </object>
+                    </property>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
-              <object class="GtkDrawingArea" id="ramOptArea">
-                <property name="height-request">30</property>
-                <property name="hexpand">true</property>
+              <object class="GtkBox">
+                <property name="margin-bottom">2</property>
+                <property name="spacing">16</property>
+                <child>
+                  <object class="GtkButton" id="btnCreateFile">
+                    <property name="label">❓ Create Random File</property>
+                    <style>
+                      <class name="btnCreateFile"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="btnDownloadRandomFile">
+                    <property name="label">⬇️ Download Generated File</property>
+                    <style>
+                      <class name="btnCreateFile"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <child>
+                  <object class="GtkButton" id="btnStartSimulation">
+                    <property name="label">✅ Start Simulation</property>
+                    <style>
+                      <class name="btnCreateFile"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="margin-bottom">2</property>
+                <property name="spacing">16</property>
+                <child>
+                  <object class="GtkButton" id="btnOpenFile">
+                    <property name="label">📁 Select File</property>
+                    <style>
+                      <class name="btnOpenFile"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="lblDirectory">
+                    <property name="label">No file selected</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="margin-bottom">2</property>
+                <property name="spacing">16</property>
+                <child>
+                  <object class="GtkLabel" id="lblDirectory_3">
+                    <property name="label">Algorithm: </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkDropDown" id="cmbAlgorithm">
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>FIFO</item>
+                          <item>Second Chance</item>
+                          <item>LRU</item>
+                          <item>LFU</item>
+                        </items>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">4</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">center</property>
+                    <property name="label">RAM - OPT</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkDrawingArea" id="ramOptArea">
+                    <property name="height-request">30</property>
+                    <property name="hexpand">true</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">4</property>
+                <child>
+                  <object class="GtkLabel" id="lblAlgName">
+                    <property name="halign">center</property>
+                    <property name="label">RAM - [???] </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkDrawingArea" id="ramAlgArea">
+                    <property name="height-request">30</property>
+                    <property name="hexpand">true</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkBox" id="boxSimul">
+                <property name="homogeneous">false</property>
+                <property name="orientation">horizontal</property>
+                <property name="spacing">20</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">10</property>
+                    <property name="hexpand">false</property>
+                    <child>
+                      <object class="GtkBox" id="boxMmuOpt">
+                        <property name="hexpand">false</property>
+                        <property name="vexpand">true</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="boxStatsOpt">
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">10</property>
+                    <property name="hexpand">false</property>
+                    <child>
+                      <object class="GtkBox" id="boxMmuAlg">
+                        <property name="hexpand">false</property>
+                        <property name="vexpand">true</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="boxStatsAlg">
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="orientation">vertical</property>
-            <property name="spacing">4</property>
-            <child>
-              <object class="GtkLabel" id="lblAlgName">
-                <property name="halign">center</property>
-                <property name="label">RAM - [???] </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkDrawingArea" id="ramAlgArea">
-                <property name="height-request">30</property>
-                <property name="hexpand">true</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="homogeneous">true</property>
-            <property name="orientation">horizontal</property>
-            <property name="spacing">20</property>
-            <child>
-              <object class="GtkBox" id="boxMmuOpt">
-                <property name="hexpand">true</property>
-                <property name="vexpand">true</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkBox" id="boxMmuAlg">
-                <property name="hexpand">true</property>
-                <property name="vexpand">true</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkGrid">
-            <property name="column-spacing">10</property>
-            <property name="row-spacing">6</property>
-          </object>
-        </child>
+        </property>
       </object>
     </child>
   </object>
