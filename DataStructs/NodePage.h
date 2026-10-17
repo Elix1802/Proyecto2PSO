@@ -24,14 +24,20 @@ void destroyNodePage(NodePage * self);
 //get
 NodePage * getNextPtr(NodePage * self);
 NodePage * getPastPtr(NodePage * self);
+void bringFromDisk(NodePage * self);
+
 
 //Puts
 void putNextPtr(NodePage * self, NodePage * nextPtr);
 void putPastPtr(NodePage * self, NodePage * pastPtr);
 void putOnVirtualMemory(NodePage * self, int D_Addr);
-void bringFromDisk(NodePage * self);
 void addOneMoreFreq(NodePage * self);
 
 //print
 void printNodePage(NodePage * self);
 #endif
+
+
+
+
+

@@ -11,14 +11,17 @@
 void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr, NodePage ** futurePredicts, MMU * mmu){
 
     Stack * stack = createStack();
-    if(Memory->cantidad < 7) {
+    if(Memory->cantidad < 100) {
         nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        mmu->elapsedTime+=5;
         return;
     }
 
     for(int i = Memory->frente; i<Memory->final;i++) {
-        if(Memory->datos[i]->id == nodePage->id) return;
+        if(Memory->datos[i]->id == nodePage->id) {
+            mmu->elapsedTime++;
+            return;}
     }
 
     int found = 0;
@@ -59,11 +62,14 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
     enqueue(Memory, nodePage);
 
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
+    mmu->elapsedTime+=5;
+
 }
 
 void bringPageToMemoryOPT(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr,NodePage ** futurePredicts, MMU * mmu ) {
     NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
+        mmu->trashingTime+=5;
         bringFromDisk(nodePage);
         insertionPageOPT(Memory, nodePage, diskTable, ptrDiskAddr, futurePredicts, mmu);
 

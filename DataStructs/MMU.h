@@ -29,6 +29,8 @@ struct MMU {
   int totalMemory;
   int pageSize;
   int algID;
+  int elapsedTime;
+  int trashingTime;
   DLinkedList * pageTable;
   NodePage ** frames;
   int frameCount; //Cantidad de marcos
@@ -40,12 +42,12 @@ struct MMU {
   Queue * MemoryRAM;
 
   //Predicción del futuro
-  NodePage ** futurePages; //Nodos peones
+  NodePage ** futurePages; //Nodos peones que se usarán a futuro
   int actualTimeMoment;
   int sizeDefault; //Tamaño por default del future pages
 
   int nextPtr;
-  int nextPageId;
+  int nextPageId; //id de cada página 
   int nextDiskId;//Id de cada elemento en la memoria virtual
 
   double wastedMemory;

@@ -4,18 +4,23 @@
 #include "../DataStructs/DLinkedList.h"
 #include "../DataStructs/Queue.h"
 #include "../DataStructs/DiskTable.h"
+#include "../DataStructs/MMU.h"
 
 
-void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
+void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr, MMU * mmu){
 
-    if(Memory->cantidad < 5) {
+    if(Memory->cantidad < 100) {
         nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        mmu->elapsedTime+=5;
         return;
     }
 
     for(int i = Memory->frente; i<Memory->final;i++) {
-        if(Memory->datos[i]->id == nodePage->id) return;
+        if(Memory->datos[i]->id == nodePage->id) {
+            mmu->elapsedTime++;    
+            return;
+        }
     }
 
     
@@ -30,13 +35,16 @@ void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTabl
     enqueue(Memory, nodePage);
 
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
+    mmu->elapsedTime+=5;
+
 }
 
-void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr) {
+void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr, MMU*mmu) {
     NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
+        mmu->trashingTime+=5;
         bringFromDisk(nodePage);
-        insertionPageFIFO(Memory, nodePage, diskTable, ptrDiskAddr);
+        insertionPageFIFO(Memory, nodePage, diskTable, ptrDiskAddr, mmu);
 
     }
 }

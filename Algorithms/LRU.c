@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "LRU.h"
+#include "../DataStructs/MMU.h"
 
-void insertionPageLRU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr){
-    if(Memory->cantidad < 6) {
+void insertionPageLRU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr, MMU * mmu){
+    if(Memory->cantidad < 100) {
         nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        mmu->elapsedTime+=5;
         return;
     }
 
@@ -13,6 +15,7 @@ void insertionPageLRU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
         if(Memory->datos[i]->id == nodePage->id) {
             deleteSpecificElementQueue(Memory, nodePage->id);
             enqueue(Memory, nodePage);
+            mmu->elapsedTime++;
             return;
         }
     }
@@ -28,13 +31,16 @@ void insertionPageLRU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
     enqueue(Memory, nodePage);
 
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
+    mmu->elapsedTime+=5;
+
 }
 
-void bringPageToMemoryLRU(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr) {
+void bringPageToMemoryLRU(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr, MMU * mmu) {
     NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
+        mmu->trashingTime+=5;
         bringFromDisk(nodePage);
-        insertionPageLRU(Memory, nodePage, diskTable, ptrDiskAddr);
+        insertionPageLRU(Memory, nodePage, diskTable, ptrDiskAddr, mmu);
 
     }
 }

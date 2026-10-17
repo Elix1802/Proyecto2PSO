@@ -4,15 +4,7 @@
 #include <stdlib.h>
 
 
-struct KeyValueDisk {
-    int key; //Indice en memoria                     
-    NodePage * value;
-    struct KeyValueDisk * next;            
-};
 
-struct DiskTable {
-    KeyValueDisk ** values;
-};
 
 int DIC_SIZE_DISK = 256;
 

@@ -28,6 +28,8 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->availableMemory = totalMemory;
     mmu->pageSize = pageSize;
     mmu->algID = algID;
+    mmu->elapsedTime = 0;
+    mmu->trashingTime = 0;
     mmu->ptrs = NULL;
     mmu->nextPtr = 1;
     mmu->nextPageId = 1;
@@ -261,19 +263,19 @@ int newP(MMU * self, int pid, int size) {
         }
 
         if(self->algID == 2) { //2 FIFO
-            insertionPageFIFO(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId); //Se añade la página a ram
+            insertionPageFIFO(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self); //Se añade la página a ram
         }
 
         else if(self->algID == 3) { //3 Second Chance
-            insertionPageSecondChance(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
+            insertionPageSecondChance(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
 
         else if(self->algID == 4) { //LRU
-            insertionPageLRU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
+            insertionPageLRU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
 
         else if(self->algID == 5) { //LRU
-            insertionPageLFU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId);
+            insertionPageLFU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
 
         self->actualTimeMoment++; 
@@ -302,16 +304,16 @@ void useP(MMU * self, int ptr) {
                             bringPageToMemoryOPT(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self->futurePages, self);
                             break;
                         case 2:
-                            bringPageToMemoryFIFO(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            bringPageToMemoryFIFO(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
                             break;
                         case 3:
-                            bringPageToMemorySecondChance(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            bringPageToMemorySecondChance(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
                             break;
                         case 4:
-                            bringPageToMemoryLRU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            bringPageToMemoryLRU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
                             break;
                         case 5:
-                            bringPageToMemoryLFU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId);
+                            bringPageToMemoryLFU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
                             break;
                         default:
                             break;
