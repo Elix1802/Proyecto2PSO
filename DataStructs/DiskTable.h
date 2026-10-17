@@ -9,12 +9,14 @@ struct KeyValueDisk {
     struct KeyValueDisk * next;            
 };
 
+typedef struct KeyValueDisk KeyValueDisk;
+
+
 struct DiskTable {
     KeyValueDisk ** values;
 };
 
 typedef struct DiskTable DiskTable;
-typedef struct KeyValueDisk KeyValueDisk;
 
 DiskTable * createDiskTable();
 void destroyDiskTable(DiskTable * self);

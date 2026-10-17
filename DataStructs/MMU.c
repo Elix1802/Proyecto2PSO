@@ -123,12 +123,13 @@ DLinkedList * getPages(MMU * self, int processId) {
 
 void destroyMMU(MMU * self) {
     if (self == NULL) return;
+    destroySymbolsTable(self->symbolsTable);
+    destroyDLinkedList(self->pageTable);
 
     destroyProcessTable(self->processTable);
-    destroySymbolsTable(self->symbolsTable);
 
+    
 
-    destroyDLinkedList(self->pageTable);
     free(self->frames);
     free(self);
 }
