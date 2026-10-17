@@ -18,12 +18,6 @@ enum AlgorithmID {
     LFU  = 5
 };
 
-typedef struct PtrEntry {
-    int ptr, pid, size, nPages;   
-    NodePage ** pages;
-    struct PtrEntry * next;
-} PtrEntry;
-
 struct MMU {
   int availableMemory;
   int totalMemory;
@@ -37,7 +31,6 @@ struct MMU {
   SymbolsTable * symbolsTable;
   ProcessTable * processTable;
   DiskTable * diskTable;
-  PtrEntry * ptrs;
 
   Queue * MemoryRAM;
 

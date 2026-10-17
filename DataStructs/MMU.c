@@ -30,7 +30,6 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->algID = algID;
     mmu->elapsedTime = 0;
     mmu->trashingTime = 0;
-    mmu->ptrs = NULL;
     mmu->nextPtr = 1;
     mmu->nextPageId = 1;
     mmu->nextDiskId = 100;
@@ -129,13 +128,6 @@ void destroyMMU(MMU * self) {
     destroyProcessTable(self->processTable);
     destroySymbolsTable(self->symbolsTable);
 
-    PtrEntry * e = self->ptrs;
-    while (e != NULL) {
-        PtrEntry * next = e->next;
-        free(e->pages);
-        free(e);
-        e = next;
-    }
 
     destroyDLinkedList(self->pageTable);
     free(self->frames);
