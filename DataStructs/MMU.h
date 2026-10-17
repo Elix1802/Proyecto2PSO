@@ -54,7 +54,7 @@ void destroyMMU(MMU * self);
 int addProcess(MMU * self, int processId);
 DLinkedList* getPages(MMU * self, int processId);
 
-//Posibles Instrucciones
+// Instrucciones
 int newP(MMU * self, int pid, int size);
 void useP(MMU * self, int ptr);
 void deleteP(MMU * self, int ptr);
@@ -67,3 +67,4 @@ void restoreIdPages(MMU * self);
 void printPredicts(MMU * self);
 void increaseFuturePredict(MMU * self);
 #endif // MMU_H
+

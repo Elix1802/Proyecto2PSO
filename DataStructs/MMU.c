@@ -247,7 +247,7 @@ int newP(MMU * self, int pid, int size) {
 
         NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
         addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
-        addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //SE añade la pagina a la tabla de simbolos
+        addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //Se añade la pagina a la tabla de simbolos
 
         if(self->algID == 1) { //2 FIFO
             insertionPageOPT(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self->futurePages, self); //Se añade la página a ram
@@ -285,7 +285,7 @@ void useP(MMU * self, int ptr) {
 
         if(nodePage != NULL) {
             while(nodePage->id != -2) {
-                self->actualTimeMoment++; //Por revisar
+                self->actualTimeMoment++;
                 if(self->algID == 3) {
                     nodePage->Mark = 1;
                 } 
