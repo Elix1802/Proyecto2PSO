@@ -39,7 +39,6 @@ struct MMU {
   int actualTimeMoment;
   int sizeDefault; //Tamaño por default del future pages
 
-  int nextPtr;
   int nextPageId; //id de cada página 
   int nextDiskId;//Id de cada elemento en la memoria virtual
 

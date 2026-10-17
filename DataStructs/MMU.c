@@ -30,7 +30,6 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->algID = algID;
     mmu->elapsedTime = 0;
     mmu->trashingTime = 0;
-    mmu->nextPtr = 1;
     mmu->nextPageId = 1;
     mmu->nextDiskId = 100;
     mmu->frameCount = totalMemory / pageSize;
@@ -271,6 +270,7 @@ int newP(MMU * self, int pid, int size) {
         }
 
         self->actualTimeMoment++; 
+        self->availableMemory -= self->pageSize;
 
     }
 
