@@ -29,7 +29,6 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->pageSize = pageSize;
     mmu->algID = algID;
     mmu->elapsedTime = 0;
-    mmu->trashingTime = 0;
     mmu->nextPageId = 1;
     mmu->nextDiskId = 100;
     mmu->frameCount = totalMemory / pageSize;
@@ -140,6 +139,10 @@ void destroyMMU(MMU * self) {
 
     destroyProcessTable(self->processTable);
 
+    for(int i = 0; i<self->sizeDefault;i++) {
+        destroyNodePage(self->futurePages[i]);
+    }
+
     
 
     free(self->frames);
@@ -243,7 +246,8 @@ int newP(MMU * self, int pid, int size) {
     if (self == NULL || size <= 0) return -1;
 
     int numPages = size / self->pageSize + (size % self->pageSize != 0);
-    self->wastedMemory += numPages*self->pageSize - size;
+    self->fragmentationKB += numPages*self->pageSize - size;
+    double fragmentation = numPages*self->pageSize - size;
 
     NodeProcess * newProcess = getProcessTableValue(self->processTable, pid);
     if(newProcess  == NULL) 
@@ -260,6 +264,10 @@ int newP(MMU * self, int pid, int size) {
     for(int i = 0; i<numPages; i++) {
 
         NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
+        if(i == numPages - 1) {
+            newNode->frag = fragmentation;
+        }
+
         addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
         addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //Se añade la pagina a la tabla de simbolos
 
@@ -360,6 +368,7 @@ void deleteP(MMU * self, int ptr) {
 
                     NodePage* eliminado = removeNode(self->pageTable);
                     if (eliminado != NULL) {
+                        self->fragmentationKB-=eliminado->frag;
                         getDiskTableValue(self->diskTable, nodoActual->D_Address);
                         destroyNodePage(eliminado); 
                     }
@@ -399,6 +408,7 @@ void killP(MMU * self, int pid) {
                     //printNodePage(nodoActual);
                     NodePage* eliminado = removeNode(self->pageTable);
                     if (eliminado != NULL) {
+                        self->fragmentationKB-=eliminado->frag;
                         getDiskTableValue(self->diskTable, nodoActual->D_Address);
                         destroyNodePage(eliminado); 
                     }

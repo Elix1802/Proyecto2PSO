@@ -13,6 +13,9 @@ struct NodePage {
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;
     int freq;
+
+    //Fragmentación de la página
+    int frag;
 };
 
 typedef struct NodePage NodePage;
