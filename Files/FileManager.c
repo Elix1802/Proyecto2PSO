@@ -291,6 +291,7 @@ int generateInstructions(unsigned int seed, int P, int N,InstructionList* instru
 
 
 //Para debuggear
+/*
 static void printInstruction(const Instruction* ins){
     switch (ins->operation)
     {
@@ -314,7 +315,7 @@ static void printInstruction(const Instruction* ins){
         break;
     }
 }
-
+*/
 
 //Archivo
 int runFile(char *filename) {
@@ -461,6 +462,62 @@ int createFile(char *filename, InstructionList *instructionList){
 }
 
 
+int loadInstructions(const char *filename, InstructionList *list) {
+    if (filename == NULL || list == NULL) {
+        return -1;
+    }
+
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        return -1;
+    }
+
+    initInstructionList(list);
+
+    char line[300];
+    int lineNumber = 0;
+    int nextPtr = 1;
+
+    while (fgets(line, sizeof(line), file)) {
+        lineNumber++;
+
+        int len = (int)strlen(line);
+        while (len > 0 && isspace((unsigned char)line[len - 1])) {
+            line[--len] = '\0';
+        }
+
+        char *start = line;
+        while (*start != '\0' && isspace((unsigned char)*start)) {
+            start++;
+        }
+
+        if (*start == '\0') {
+            continue;
+        }
+
+        int pid = 0, size = 0, ptr = 0, n = 0;
+        int ok = 0;
+
+        if (sscanf(start, "new(%d,%d)%n", &pid, &size, &n) == 2 && n > 0 && start[n] == '\0') {
+            ok = (appendInstruction(list, NEW, pid, size, nextPtr++) == 0);
+        } else if (sscanf(start, "use(%d)%n", &ptr, &n) == 1 && n > 0 && start[n] == '\0') {
+            ok = (appendInstruction(list, USE, 0, 0, ptr) == 0);
+        } else if (sscanf(start, "delete(%d)%n", &ptr, &n) == 1 && n > 0 && start[n] == '\0') {
+            ok = (appendInstruction(list, DELETE, 0, 0, ptr) == 0);
+        } else if (sscanf(start, "kill(%d)%n", &pid, &n) == 1 && n > 0 && start[n] == '\0') {
+            ok = (appendInstruction(list, KILL, pid, 0, 0) == 0);
+        }
+
+        if (!ok) {
+            freeInstructionList(list);
+            fclose(file);
+            return -1;
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
 
 
 
@@ -482,7 +539,7 @@ int mainPruebas() {
 
     printf("---Semilla %d---\n", seed);
     for(int i = 0; i < IL1.count; i++){
-        printInstruction(&IL1.instructions[i]);
+        //printInstruction(&IL1.instructions[i]);
     }
 
     snprintf(processessFileName, sizeof processessFileName, "SecuenciaProcesos-S%d-P%d-N%d", seed, P, N);

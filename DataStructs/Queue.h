@@ -18,6 +18,7 @@ int enqueue(Queue *cola, NodePage* valor);
 NodePage* dequeue(Queue *cola);
 NodePage* peek(const Queue *cola);
 NodePage * deleteSpecificElementQueue(Queue *cola, int idPage);
+NodePage * queueAt(const Queue *cola, int k);
 void printQueue(Queue * self);
 
 #endif

@@ -13,6 +13,7 @@ struct NodePage {
     struct NodePage * nextPtr;
     struct NodePage * pastPtr;
     int freq;
+    double frag;
 };
 
 typedef struct NodePage NodePage;

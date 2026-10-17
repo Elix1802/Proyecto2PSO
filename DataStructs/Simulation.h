@@ -14,9 +14,9 @@ typedef struct {
     int maxPtr;
 } Simulation;
 
-Simulation *simCReate(const InstructionList *list, int algID);
+int simValidate(const InstructionList *list);
+Simulation *simCreate(const InstructionList *list, int algID);
 int simStep(Simulation *sim);
 void simDestroy(Simulation *sim);
-
 
 #endif

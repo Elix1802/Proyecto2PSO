@@ -13,13 +13,11 @@
 #include "../Algorithms/LFU.h"
 #include "../Algorithms/OPT.h"
 
-
-
-
 MMU * createMMU(int algID, int totalMemory, int pageSize) {
     if (algID < OPT || algID > LFU) return NULL;
     if (pageSize <= 0 || totalMemory < pageSize) return NULL;
     if (totalMemory % pageSize != 0) return NULL;
+    if (totalMemory / pageSize > 100) return NULL;
 
     MMU * mmu = (MMU *) malloc(sizeof(MMU));
     if (mmu == NULL) return NULL;
@@ -29,11 +27,21 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->pageSize = pageSize;
     mmu->algID = algID;
     mmu->elapsedTime = 0;
-    mmu->trashingTime = 0;
     mmu->nextPageId = 1;
     mmu->nextDiskId = 100;
     mmu->frameCount = totalMemory / pageSize;
+
     mmu->wastedMemory = 0.0;
+    mmu->processes = 0;
+    mmu->ramKB = 0;
+    mmu->ramPct = 0;
+    mmu->vramKB = 0;
+    mmu->vramPct = 0;
+    mmu->loaded = 0; 
+    mmu->unloaded = 0;
+    mmu->thrashTime = 0;
+    mmu->thrashPct = 0;
+    mmu->fragmentationKB = 0;
 
     mmu->frames = (NodePage **) calloc(mmu->frameCount, sizeof(NodePage *));
     if (mmu->frames == NULL) {
@@ -75,24 +83,21 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
         return NULL;
     }
 
-    //Selección de RAM
-    if(algID == 1) {
-        mmu->actualTimeMoment = 0;
+    mmu->actualTimeMoment = 0;
+    mmu->sizeDefault = 0;
+    mmu->futurePages = NULL;
+
+    if (algID == OPT) {
         mmu->sizeDefault = 255;
-        mmu->futurePages = (NodePage**) malloc(mmu->sizeDefault* sizeof(NodePage));
-        for(int i = 0; i< mmu->sizeDefault; i++) {
-            mmu->futurePages[i] = NULL;
-        }
+        mmu->futurePages = (NodePage **) calloc(mmu->sizeDefault, sizeof(NodePage *));
     }
 
     Queue * queue = (Queue*) malloc(sizeof(Queue));
     inicializar(queue);
     mmu->MemoryRAM =queue; 
 
-
     return mmu;
 }
-
 
 int addProcess(MMU * self, int processId) {
     if (self == NULL) return 0;
@@ -112,50 +117,39 @@ DLinkedList * getPages(MMU * self, int processId) {
     if (self == NULL) return NULL;
     if (getProcessTableValue(self->processTable, processId) == NULL) return NULL;
 
-    DLinkedList * list = self->pageTable;
     NodeProcess * process = getProcessTableValue(self->processTable, processId);
-
-    DLinkedList * pages = getAllProcessPages(process);
-
-    
-    return pages;
+    return getAllProcessPages(process);
 }
 
 void destroyMMU(MMU * self) {
     if (self == NULL) return;
+
     destroySymbolsTable(self->symbolsTable);
-    destroyDLinkedList(self->pageTable);
-
+    destroyDiskTable(self->diskTable);
     destroyProcessTable(self->processTable);
+    destroyDLinkedList(self->pageTable);
+    free(self->MemoryRAM);
 
-    
+    if (self->futurePages != NULL) {
+        for (int i = 0; i < self->sizeDefault; i++) {
+            destroyNodePage(self->futurePages[i]);
+        }
+        free(self->futurePages);
+    }
 
     free(self->frames);
     free(self);
 }
 
-static int findFreeFrame(MMU * self) {
-    for (int f = 0; f < self->frameCount; f++) {
-        if (self->frames[f] == NULL) return f;
-    }
-    return -1;
-}
-
-static NodePage * appendPageInRam(MMU * self, int pid, int logicalAddress, int frame) {
-    DLinkedList * list = self->pageTable;
-
-    append(list, self->nextPageId, pid, 1, logicalAddress, frame, -1,1);
-    goToEnd(list);
-    previousNodePage(list);
-    NodePage * page = getElement(list);
-    goToStart(list);
-
-    if (page == NULL) return NULL;
-
-    self->nextPageId++;
-    self->frames[frame] = page;
-    self->availableMemory -= self->pageSize;
-    return page;
+void updateStats(MMU * self) {
+    if (self == NULL) return;
+    self->loaded = self->MemoryRAM->cantidad;
+    self->availableMemory = self->totalMemory - self->loaded * self->pageSize;
+    self->ramKB = self->loaded * self->pageSize / 1024.0;
+    self->ramPct = self->loaded * 100.0 / self->frameCount;
+    self->vramKB = self->unloaded * self->pageSize / 1024.0;
+    self->vramPct = self->unloaded * 100.0 / self->frameCount;
+    self->thrashPct = self->elapsedTime > 0 ? self->thrashTime * 100.0 / self->elapsedTime : 0.0;
 }
 
 int predictNew(MMU * self, int size) {
@@ -174,20 +168,19 @@ int predictNew(MMU * self, int size) {
 }
 
 int predictUse(MMU * self, int logicId) {
-    if(self != NULL) {
-        int i = 0;
-        int lastActualTimeMoment = self->actualTimeMoment;
+    if(self == NULL) return -1;
 
-        for(i = 0; i<lastActualTimeMoment; i++) {
+    int lastActualTimeMoment = self->actualTimeMoment;
 
-            if(self->futurePages[i]->L_Address == logicId && self->futurePages[i]->Mark == 0) {
-                    NodePage * newPage = createNodePage(self->futurePages[i]->id, -10, -10, logicId, -10, -10, -10, NULL, NULL);
-                    newPage->Mark = 1;
-                    self->futurePages[self->actualTimeMoment++] = newPage;
-                    increaseFuturePredict(self); 
-                }
+    for(int i = 0; i < lastActualTimeMoment; i++) {
+        if(self->futurePages[i]->L_Address == logicId && self->futurePages[i]->Mark == 0) {
+            NodePage * newPage = createNodePage(self->futurePages[i]->id, -10, -10, logicId, -10, -10, -10, NULL, NULL);
+            newPage->Mark = 1;
+            self->futurePages[self->actualTimeMoment++] = newPage;
+            increaseFuturePredict(self);
         }
     }
+    return 0;
 }
 
 void restoreIdPages(MMU * self) {
@@ -210,15 +203,11 @@ void printPredicts(MMU * self) {
 void increaseFuturePredict(MMU * self) {
     if(self->actualTimeMoment >= self->sizeDefault) {
         int lastTime = self->sizeDefault;
-        self->sizeDefault *=2;
+        self->sizeDefault *= 2;
         NodePage ** temp = (NodePage**) malloc(self->sizeDefault * sizeof(NodePage*));
-        for(int i = 0; i<self->sizeDefault; i++) {
-            if(i<lastTime) temp[i] = self->futurePages[i];
+        for(int i = 0; i < self->sizeDefault; i++) {
+            if(i < lastTime) temp[i] = self->futurePages[i];
             else temp[i] = NULL;
-        }
-
-        for(int i = 0; i<lastTime; i++) {
-            destroyNodePage(self->futurePages[i]);
         }
 
         free(self->futurePages);
@@ -226,177 +215,175 @@ void increaseFuturePredict(MMU * self) {
     }
 }
 
-
 int newP(MMU * self, int pid, int size) {
     if (self == NULL || size <= 0) return -1;
 
     int numPages = size / self->pageSize + (size % self->pageSize != 0);
-    self->wastedMemory += numPages*self->pageSize - size;
+    double fragmentation = (numPages * self->pageSize - size) / 1024.0;
+    self->fragmentationKB += fragmentation;
 
     NodeProcess * newProcess = getProcessTableValue(self->processTable, pid);
-    if(newProcess  == NULL) 
-    {   
+    if (newProcess == NULL) {
         newProcess = createNodeProcess(pid);
-        addProcessTableElement(self->processTable, pid, newProcess); //Tabla de procesos
-
+        if (newProcess == NULL) return -1;
+        addProcessTableElement(self->processTable, pid, newProcess);
+        self->processes++;
+        combineDLinkedList(self->pageTable, newProcess->pages);
     }
 
+    int l_addr = self->nextPageId;
+    for (int i = 0; i < numPages; i++) {
 
-
-    int l_addr = self->nextPageId; 
-    for(int i = 0; i<numPages; i++) {
-
-        NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0,NULL, NULL);
-        addNodePageToProcess(newProcess, newNode); //Se añade la pagina al proceso
-        addSymbolsTableElement(self->symbolsTable, l_addr, newNode); //Se añade la pagina a la tabla de simbolos
-
-        if(self->algID == 1) { //2 FIFO
-            insertionPageOPT(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self->futurePages, self); //Se añade la página a ram
+        NodePage * newNode = createNodePage(self->nextPageId++, pid, 1, l_addr, -1, -1, 0, NULL, NULL);
+        if (i == numPages - 1) {
+            newNode->frag = fragmentation;
         }
 
-        if(self->algID == 2) { //2 FIFO
-            insertionPageFIFO(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self); //Se añade la página a ram
-        }
+        addNodePageToProcess(newProcess, newNode);
+        self->pageTable->size++;
+        addSymbolsTableElement(self->symbolsTable, l_addr, newNode);
 
-        else if(self->algID == 3) { //3 Second Chance
+        if (self->algID == 1) {
+            insertionPageOPT(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self->futurePages, self);
+        }
+        else if (self->algID == 2) {
+            insertionPageFIFO(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
+        }
+        else if (self->algID == 3) {
             insertionPageSecondChance(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
-
-        else if(self->algID == 4) { //LRU
+        else if (self->algID == 4) {
             insertionPageLRU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
-
-        else if(self->algID == 5) { //LRU
+        else if (self->algID == 5) {
             insertionPageLFU(self->MemoryRAM, newNode, self->diskTable, &self->nextDiskId, self);
         }
 
-        self->actualTimeMoment++; 
-        self->availableMemory -= self->pageSize;
-
+        self->actualTimeMoment++;
     }
 
-    self->pageTable = combineDLinkedList(self->pageTable, newProcess->pages);
+    updateStats(self);
     return l_addr;
 }
 
 void useP(MMU * self, int ptr) {
-    if(self != NULL) {
+    if (self == NULL) return;
 
-        NodePage * nodePage = getSymbolsTableValue(self->symbolsTable, ptr);
+    NodePage * nodePage = getSymbolsTableValue(self->symbolsTable, ptr);
 
-        if(nodePage != NULL) {
-            while(nodePage->id != -2) {
-                self->actualTimeMoment++;
-                if(self->algID == 3) {
-                    nodePage->Mark = 1;
-                } 
+    while (nodePage != NULL && nodePage->id != -2 && nodePage->L_Address == ptr) {
+        self->actualTimeMoment++;
+        if (self->algID == 3) {
+            nodePage->Mark = 1;
+        }
 
-                if(nodePage->loaded == 0) {
-                    switch(self->algID){
-                        case 1:
-                            bringPageToMemoryOPT(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self->futurePages, self);
-                            break;
-                        case 2:
-                            bringPageToMemoryFIFO(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
-                            break;
-                        case 3:
-                            bringPageToMemorySecondChance(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
-                            break;
-                        case 4:
-                            bringPageToMemoryLRU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
-                            break;
-                        case 5:
-                            bringPageToMemoryLFU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
-                            break;
-                        default:
-                            break;
-                    }   
-                } else addOneMoreFreq(nodePage);
-
-                
-                nodePage = getNextPtr(nodePage);
+        if (nodePage->loaded == 0) {
+            switch (self->algID) {
+                case 1:
+                    bringPageToMemoryOPT(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self->futurePages, self);
+                    break;
+                case 2:
+                    bringPageToMemoryFIFO(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
+                    break;
+                case 3:
+                    bringPageToMemorySecondChance(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
+                    break;
+                case 4:
+                    bringPageToMemoryLRU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
+                    break;
+                case 5:
+                    bringPageToMemoryLFU(self->MemoryRAM, self->diskTable, nodePage->D_Address, &self->nextDiskId, self);
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            self->elapsedTime += 1;
+            addOneMoreFreq(nodePage);
+            if (self->algID == 4) {
+                deleteSpecificElementQueue(self->MemoryRAM, nodePage->id);
+                enqueue(self->MemoryRAM, nodePage);
             }
         }
-        return;
+
+        nodePage = getNextPtr(nodePage);
+    }
+
+    updateStats(self);
+}
+
+static void removePagesFromTable(MMU * self, int byProcess, int key) {
+    goToStart(self->pageTable);
+
+    while (!atEnd(self->pageTable)) {
+        NodePage * nodoActual = getElement(self->pageTable);
+        int match = 0;
+
+        if (nodoActual != NULL && nodoActual->id >= 0) {
+            match = byProcess ? (nodoActual->parentId == key) : (nodoActual->L_Address == key);
+        }
+
+        if (match) {
+            NodePage * eliminado = removeNode(self->pageTable);
+            if (eliminado != NULL) {
+                self->fragmentationKB -= eliminado->frag;
+                NodeProcess * owner = getProcessTableValue(self->processTable, eliminado->parentId);
+                if (owner != NULL) {
+                    owner->pages->size--;
+                    owner->pagesNumber--;
+                }
+                if (eliminado->loaded == 0) {
+                    getDiskTableValue(self->diskTable, eliminado->D_Address);
+                    self->unloaded--;
+                }
+                destroyNodePage(eliminado);
+            }
+        } else {
+            nextNodePage(self->pageTable);
+        }
     }
 }
 
 void deleteP(MMU * self, int ptr) {
-    if(self!=NULL) {
-        NodePage * nodePage = popSymbolsTableElement(self->symbolsTable, ptr);
-            int parentId = nodePage->parentId;
-            NodeProcess * process = getProcessTableValue(self->processTable, parentId);
+    if (self == NULL) return;
 
+    NodePage * nodePage = popSymbolsTableElement(self->symbolsTable, ptr);
+    if (nodePage == NULL) return;
 
-            while(nodePage->id != -2) {
-                if(nodePage->L_Address == ptr && nodePage->loaded == 1) 
-                {   
-                    self->availableMemory += self->pageSize;
-                    deleteSpecificElementQueue(self->MemoryRAM,nodePage->id);
-                }
-                nodePage = getNextPtr(nodePage);
-            }
-            
-            
-            goToStart(self->pageTable);
-            
-            while (!atEnd(self->pageTable)) {
-                NodePage* nodoActual = getElement(self->pageTable);
-                
-                if (nodoActual != NULL && nodoActual->L_Address == ptr) {
-
-                    NodePage* eliminado = removeNode(self->pageTable);
-                    if (eliminado != NULL) {
-                        getDiskTableValue(self->diskTable, nodoActual->D_Address);
-                        destroyNodePage(eliminado); 
-                    }
-                } else {
-                    nextNodePage(self->pageTable);
-                }
-            
-            }   
-        
-            
+    while (nodePage != NULL && nodePage->id != -2 && nodePage->L_Address == ptr) {
+        if (nodePage->loaded == 1) {
+            deleteSpecificElementQueue(self->MemoryRAM, nodePage->id);
+        }
+        nodePage = getNextPtr(nodePage);
     }
+
+    removePagesFromTable(self, 0, ptr);
+    updateStats(self);
 }
 
 void killP(MMU * self, int pid) {
-    if(self!=NULL) {
-        NodeProcess * process = getProcessTableValue(self->processTable, pid);
-        if(process!=NULL) {
-            DLinkedList * pages = getAllProcessPages(process);
-            goToStart(pages);
-            NodePage * page = getElement(pages);
-            while(page->id != -2) {
-                if(page->loaded == 1) 
-                {   
-                    self->availableMemory += self->pageSize;
-                    deleteSpecificElementQueue(self->MemoryRAM,page->id);
-                }
-                page = getNextPtr(page);
-            }
-            
-            
-            goToStart(self->pageTable);
-            
-            while (!atEnd(self->pageTable)) {
-                NodePage* nodoActual = getElement(self->pageTable);
-                
-                if (nodoActual != NULL && nodoActual->parentId == pid) {
-                    //printNodePage(nodoActual);
-                    NodePage* eliminado = removeNode(self->pageTable);
-                    if (eliminado != NULL) {
-                        getDiskTableValue(self->diskTable, nodoActual->D_Address);
-                        destroyNodePage(eliminado); 
-                    }
-                } else {
-                    nextNodePage(self->pageTable);
-                }
-            
-            } 
+    if (self == NULL) return;
 
+    NodeProcess * process = getProcessTableValue(self->processTable, pid);
+    if (process == NULL) return;
+
+    DLinkedList * pages = getAllProcessPages(process);
+    if (pages != NULL) {
+        goToStart(pages);
+        NodePage * page = getElement(pages);
+        while (page != NULL && page->id != -2) {
+            if (page->loaded == 1) {
+                deleteSpecificElementQueue(self->MemoryRAM, page->id);
+            }
+            if (page->L_Address == page->id) {
+                NodePage * symbol = popSymbolsTableElement(self->symbolsTable, page->L_Address);
+                (void) symbol;
+            }
+            page = getNextPtr(page);
         }
-              
     }
 
+    removePagesFromTable(self, 1, pid);
+    self->processes--;
+    updateStats(self);
 }

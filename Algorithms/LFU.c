@@ -1,63 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "LFU.h"
-#include "../DataStructs/NodePage.h"
-#include "../DataStructs/DLinkedList.h"
-#include "../DataStructs/Queue.h"
-#include "../DataStructs/DiskTable.h"
 #include "../DataStructs/MMU.h"
 
-
-
-void insertionPageLFU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int *  ptrDiskAddr, MMU * mmu){
-
-    if(Memory->cantidad < 100) {
+void insertionPageLFU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int * ptrDiskAddr, MMU * mmu) {
+    if (Memory->cantidad < mmu->frameCount) {
         nodePage->M_Address = Memory->final;
         addOneMoreFreq(nodePage);
         enqueue(Memory, nodePage);
-        mmu->elapsedTime+=5;
+        mmu->elapsedTime += 5;
         return;
     }
 
-    for(int i = Memory->frente; i<Memory->final;i++) {
-        if(Memory->datos[i]->id == nodePage->id) {
-            addOneMoreFreq(nodePage);
-            mmu->elapsedTime++;
-            return;
-        }
+    NodePage * victim = queueAt(Memory, 0);
+    for (int k = 1; k < Memory->cantidad; k++) {
+        NodePage * candidate = queueAt(Memory, k);
+        if (candidate->freq < victim->freq) victim = candidate;
     }
 
-    int idLFU = Memory->datos[Memory->frente]->id;
-    int freq = Memory->datos[Memory->frente]->freq;
-    for(int i = Memory->frente + 1; i<Memory->final;i++) {
-        if(Memory->datos[i]->freq < freq) {
-            idLFU = Memory->datos[i]->id;
-            freq = Memory->datos[i]->freq;
-        }
-    }  
-
-    NodePage * oldestNode = deleteSpecificElementQueue(Memory,idLFU);
+    NodePage * oldestNode = deleteSpecificElementQueue(Memory, victim->id);
 
     putOnVirtualMemory(oldestNode, *ptrDiskAddr);
-
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
+    *ptrDiskAddr = (*ptrDiskAddr) + 1;
+    mmu->unloaded++;
 
-    //printNodePage(nodePage);
     nodePage->M_Address = Memory->final;
     addOneMoreFreq(nodePage);
     enqueue(Memory, nodePage);
-
-    *ptrDiskAddr = (*ptrDiskAddr) + 1;
-    mmu->elapsedTime+=5;
-
+    mmu->elapsedTime += 5;
 }
 
-void bringPageToMemoryLFU(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr, MMU * mmu) {
+void bringPageToMemoryLFU(Queue * Memory, DiskTable * diskTable, int diskPos, int * ptrDiskAddr, MMU * mmu) {
     NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
-    if(nodePage != NULL) {
-        mmu->trashingTime+=5;
+    if (nodePage != NULL) {
+        mmu->thrashTime += 5;
+        mmu->unloaded--;
         bringFromDisk(nodePage);
         insertionPageLFU(Memory, nodePage, diskTable, ptrDiskAddr, mmu);
-
     }
 }

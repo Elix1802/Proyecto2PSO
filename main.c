@@ -3,17 +3,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Files/FileManager.h"
-//#include "DataStructs/Simulation.h"
+#include "DataStructs/Simulation.h"
 
-
+//Declaraciones////////////////////////////////////////////////
+//Archivo
 static char *selected_file_path = NULL;
 static char *generated_file_path = NULL;
 
-
+//RAM
 static GtkWidget *ramOptArea = NULL;
 static GtkWidget *ramAlgArea = NULL;
 static int ramOptFrames[100];
 static int ramAlgFrames[100];
+
+//Simulacion
+static InstructionList currentList = {0};
+static Simulation *currentSim =  NULL;
+static guint simTimer = 0;
+
+static void stopSimulation(void){
+    if(simTimer != 0){
+        g_source_remove(simTimer);
+        simTimer = 0;
+    }
+    if(currentSim != NULL){
+        simDestroy(currentSim);
+        currentSim = NULL;
+    }
+    freeInstructionList(&currentList);
+}
+
+static gboolean onSimTick(gpointer data){
+    if(!simStep){
+        simTimer = 0;
+        return G_SOURCE_REMOVE;
+    }
+    //logica
+    return G_SOURCE_CONTINUE;
+}
+
 
 
 
@@ -479,7 +507,8 @@ static void on_save_dialog_response(GObject *source, GAsyncResult *result, gpoin
 
 static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_data) {
 
-  
+  g_print("1. Entra a funcion");
+
   GtkLabel *label = GTK_LABEL(user_data);
   
   AppWidgets *w = (AppWidgets *)user_data;
@@ -489,26 +518,48 @@ static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_
     GtkAlertDialog *alert = gtk_alert_dialog_new("⚠️ Please select or create a file");
     gtk_alert_dialog_show(alert, parent_window);
     g_object_unref(alert);
+    return;
 
   
   }
-  else{
-    if(runFile(selected_file_path) == 0){
+    //FALTA 
+    stopSimulation();
+    g_print("2. Hace stopSimulation");
+    InstructionList list;
+
+    if(loadInstructions(selected_file_path, &list) != 0){ //FALTA revisar
+
+        g_print("3. Hace loadInstructions");
         g_print("/El contenido del archivo no es valido\n");
         GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
         GtkAlertDialog *alert = gtk_alert_dialog_new("❌ Error: Please select a valid file.");
         gtk_alert_dialog_show(alert, parent_window);
         g_object_unref(alert);
+        return;
         
     }
-    else{
-        g_print("//////////////////Start Simulation//////////////\n");
-        printf("-------Ejecutando-------------------\n");
-        printf("selected_file_path: %s \n", selected_file_path);
-        runFile(selected_file_path);
-        g_print("//////////////////Simulation Finished//////////////\n");
+
+    int algID = (int)gtk_drop_down_get_selected(GTK_DROP_DOWN(w->cmbAlgorithm)) + FIFO; //FALTA revisar + FIFO
+   
+    currentSim = simCreate(&currentList, algID);
+
+    if (currentSim == NULL){
+        freeInstructionList(&currentList);
+
+        g_print("/No se pudo crear la simulacion\n");
+        GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+        GtkAlertDialog *alert = gtk_alert_dialog_new("❌ Error: Simulation can't be created");
+        gtk_alert_dialog_show(alert, parent_window);
+        g_object_unref(alert);
+        return;
     }
-  }
+    simTimer = g_timeout_add(100, onSimTick, NULL);
+    g_print("//////////////////Start Simulation//////////////\n");
+    printf("-------Ejecutando-------------------\n");
+    printf("selected_file_path: %s \n", selected_file_path);
+    runFile(selected_file_path);
+    g_print("//////////////////Simulation Finished//////////////\n");
+  
 }
 
 static void on_download_clicked(GtkButton *button, gpointer user_data) {
@@ -761,7 +812,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     }
     
     if (widgets.btnStartSimulation) {
-        g_signal_connect(widgets.btnStartSimulation, "clicked", G_CALLBACK(on_start_simulation_button_clicked), NULL);
+        g_signal_connect(widgets.btnStartSimulation, "clicked", G_CALLBACK(on_start_simulation_button_clicked), &widgets);
     }
     
     if(widgets.btnDownload){

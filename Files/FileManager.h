@@ -25,8 +25,11 @@ typedef struct {
 //P: numero de procesos a simular 
 //N: cantidad de instrucciones a generar
 int generateInstructions(unsigned int seed, int P, int N, InstructionList* instructionList);
+int loadInstructions(const char *filename, InstructionList *list);
 int runFile(char *filename);
 int createFile(char *filename, InstructionList* instructionList);
+
+int appendInstruction(InstructionList *l, enum OP op, int pid, int size, int ptr);
 
 void initInstructionList(InstructionList* instructionList);
 void addInstruction(InstructionList* instructionList, Instruction instruction);

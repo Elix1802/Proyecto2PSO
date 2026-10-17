@@ -7,8 +7,6 @@
 #include "ProcessTable.h"
 #include "DiskTable.h"
 #include "Queue.h"
-#include "../Algorithms/FIFO.h"
-#include "../Algorithms/SecondChance.h"
 
 enum AlgorithmID {
     OPT  = 1,
@@ -24,26 +22,30 @@ struct MMU {
   int pageSize;
   int algID;
   int elapsedTime;
-  int trashingTime;
   DLinkedList * pageTable;
   NodePage ** frames;
-  int frameCount; //Cantidad de marcos
+  int frameCount;
   SymbolsTable * symbolsTable;
   ProcessTable * processTable;
   DiskTable * diskTable;
 
   Queue * MemoryRAM;
 
-  //Predicción del futuro
-  NodePage ** futurePages; //Nodos peones que se usarán a futuro
+  NodePage ** futurePages;
   int actualTimeMoment;
-  int sizeDefault; //Tamaño por default del future pages
+  int sizeDefault;
 
-  int nextPageId; //id de cada página 
-  int nextDiskId;//Id de cada elemento en la memoria virtual
+  int nextPageId;
+  int nextDiskId;
 
   double wastedMemory;
 
+  int processes;
+  double ramKB, ramPct;
+  double vramKB, vramPct;
+  int loaded, unloaded;
+  double thrashTime, thrashPct;
+  double fragmentationKB;
 };
 
 typedef struct MMU MMU;
@@ -54,17 +56,16 @@ void destroyMMU(MMU * self);
 int addProcess(MMU * self, int processId);
 DLinkedList* getPages(MMU * self, int processId);
 
-// Instrucciones
 int newP(MMU * self, int pid, int size);
 void useP(MMU * self, int ptr);
 void deleteP(MMU * self, int ptr);
 void killP(MMU * self, int pid);
 
-//Predicts:
 int predictNew(MMU * self, int size);
 int predictUse(MMU * self, int logicId);
 void restoreIdPages(MMU * self);
 void printPredicts(MMU * self);
 void increaseFuturePredict(MMU * self);
-#endif // MMU_H
 
+void updateStats(MMU * self);
+#endif

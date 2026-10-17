@@ -7,7 +7,8 @@ Stack * createStack() {
     stack->defaultSize = 256;
     stack->actualIndex = 0;
     stack->size = 0;
-    stack->pila = (int*) calloc(stack->defaultSize, sizeof(Stack));
+    stack->pila = (int*) calloc(stack->defaultSize, sizeof(int));
+    return stack;
 }
 void destroyStack(Stack * self){
     free(self->pila);
@@ -33,4 +34,5 @@ int popStack(Stack * self) {
         self->size--;
         return id;
     }
+    return -1;
 }

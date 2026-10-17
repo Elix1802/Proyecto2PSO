@@ -21,6 +21,7 @@ NodeProcess * createNodeProcess(int pid) {
 
 void destroyNodeProcess(NodeProcess * self) {
     if(self != NULL) {
+        free(self->pages);
         free(self);
     }
 }
@@ -30,6 +31,7 @@ int getNumberPages(NodeProcess * self) {
     if(self != NULL) {
         return self->pagesNumber;
     }
+    return 0;
 }
 
 DLinkedList * getAllProcessPages(NodeProcess * self) {

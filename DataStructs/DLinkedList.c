@@ -159,16 +159,10 @@ void clearDLinkedList(DLinkedList* list){
 }
 
 DLinkedList * combineDLinkedList(DLinkedList * list1, DLinkedList * list2) {
-    DLinkedList* list = (DLinkedList*)malloc(sizeof(DLinkedList));
-    if (list == NULL) {
-        return NULL; 
-    }
-    list->head = list1->head;
-    list->current = list->head;
+    if (list1 == NULL || list2 == NULL) return list1;
     putNextPtr(list1->tail, list2->head);
     putPastPtr(list2->head, list1->tail);
-
-    list->tail = list2->tail;
-    list->size = list1->size + list2->size;
-    return list;
+    list1->tail = list2->tail;
+    list1->size = list1->size + list2->size;
+    return list1;
 }

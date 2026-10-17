@@ -3,40 +3,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DIC_SIZE_DISK 1024
 
 
-
-int DIC_SIZE_DISK = 256;
-
-
-int hashFunctionDisk(int key) {
+static int hashFunctionDisk(int key) {
     return (key % DIC_SIZE_DISK + DIC_SIZE_DISK) % DIC_SIZE_DISK;
 }
 
 DiskTable * createDiskTable() {
     DiskTable * diskTable = (DiskTable*) malloc(sizeof(DiskTable));
     if(diskTable == NULL) return NULL;
-    
-    diskTable->values = (KeyValueDisk**) malloc(DIC_SIZE_DISK * sizeof(KeyValueDisk*));
+
+    diskTable->values = (KeyValueDisk**) calloc(DIC_SIZE_DISK, sizeof(KeyValueDisk*));
     if(diskTable->values == NULL) {
         free(diskTable);
         return NULL;
     }
 
-    for (int i = 0; i < DIC_SIZE_DISK; i++) {
-        diskTable->values[i] = NULL; 
-    }
-
     return diskTable;
 }
-
 
 void destroyDiskTable(DiskTable * self) {
     if(self != NULL) {
         for (int i = 0; i < DIC_SIZE_DISK; i++) {
             KeyValueDisk * currentKv = self->values[i];
-            if (currentKv != NULL && currentKv->value != NULL) {
-                destroyNodePage(currentKv->value);
+            while(currentKv != NULL) {
+                KeyValueDisk * nextKv = currentKv->next;
+                free(currentKv);
+                currentKv = nextKv;
             }
         }
         free(self->values);
@@ -44,96 +38,55 @@ void destroyDiskTable(DiskTable * self) {
     }
 }
 
-
 int addDiskTableElement(DiskTable * self, int key, NodePage * newNode){
     if(self == NULL || newNode == NULL) return -1;
-    
+
     int index = hashFunctionDisk(key);
 
     KeyValueDisk * currentKv = self->values[index];
-
-    int i = index;
-    
     while(currentKv != NULL) {
-        if(currentKv->key == key) {
-            return 0;
-        }
-
-        if(i >= DIC_SIZE_DISK) {
-            int lastSize = DIC_SIZE_DISK;
-            DIC_SIZE_DISK*=2;
-            KeyValueDisk ** temp = (KeyValueDisk**) malloc(DIC_SIZE_DISK * sizeof(KeyValueDisk*));
-            for(int j = 0; j<DIC_SIZE_DISK; j++) {   
-                temp[j] = NULL;
-            }
-
-            for(int j = 0; j<lastSize; j++) {
-                int newIndex = hashFunctionDisk(self->values[j]->key);
-                temp[newIndex] =  *&self->values[j];
-            }
-            
-            free(self->values);
-            self->values = temp;
-            
-            //Agregar nuevo key
-            KeyValueDisk * newKeyValue = (KeyValueDisk*) malloc(sizeof(KeyValueDisk));
-                
-            if(newKeyValue == NULL) return -2;
-
-            int newIndex = hashFunctionDisk(key);
-            
-            newKeyValue->key = key;
-            newKeyValue->value = newNode;
-
-            newKeyValue->next = self->values[(newIndex + 1 >= DIC_SIZE_DISK) ? newIndex : newIndex + 1];
-            self->values[newIndex] = newKeyValue;
-
-            return 2;
-
-        }
-        i++;
+        if(currentKv->key == key) return 0;
         currentKv = currentKv->next;
     }
-    
-    index = i;
+
     KeyValueDisk * newKeyValue = (KeyValueDisk*) malloc(sizeof(KeyValueDisk));
-    
     if(newKeyValue == NULL) return -2;
-    
+
     newKeyValue->key = key;
     newKeyValue->value = newNode;
-
-    newKeyValue->next = self->values[(index + 1 >= DIC_SIZE_DISK) ? index : index + 1];
+    newKeyValue->next = self->values[index];
     self->values[index] = newKeyValue;
     return 1;
 }
 
-
 NodePage* getDiskTableValue(DiskTable * self, int key) {
     if(self != NULL) {
         int index = hashFunctionDisk(key);
+        KeyValueDisk * prev = NULL;
         KeyValueDisk * currentKv = self->values[index];
-        int i =  index;
+
         while(currentKv != NULL) {
             if(currentKv->key == key) {
-                self->values[i] = NULL;
-                return currentKv->value;
+                if(prev == NULL) self->values[index] = currentKv->next;
+                else prev->next = currentKv->next;
+                NodePage * value = currentKv->value;
+                free(currentKv);
+                return value;
             }
+            prev = currentKv;
             currentKv = currentKv->next;
-            i++;
         }
     }
     return NULL;
 }
 
-
-
 void printDiskTableValues(DiskTable * self) {
     if(self != NULL) {
         for(int i = 0; i < DIC_SIZE_DISK; i++) {
             KeyValueDisk * currentKv = self->values[i];
-            if(currentKv != NULL) {
+            while(currentKv != NULL) {
                 printNodePage(currentKv->value);
+                currentKv = currentKv->next;
             }
         }
     }

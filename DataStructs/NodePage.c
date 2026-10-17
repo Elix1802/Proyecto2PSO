@@ -19,6 +19,7 @@ NodePage * createNodePage(int pageId, int parentId, int loaded, int L_Addr, int 
     nodePage->pastPtr = pastPtr;
 
     nodePage->freq = 0;
+    nodePage->frag = 0;
 
     return nodePage;
 }
@@ -32,11 +33,13 @@ NodePage * getNextPtr(NodePage * self) {
     if(self != NULL) {
         return self->nextPtr;
     }
+    return NULL;
 }
 NodePage * getPastPtr(NodePage * self) {
     if(self != NULL) {
         return self->pastPtr;
     }
+    return NULL;
 }
 
 //Puts
