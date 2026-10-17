@@ -2,8 +2,8 @@ CC = gcc
 
 TARGET = app
 
-SRC = main.c Files/FileManager.c
-HEADERS = $(wildcard Files/*.h DataStructs/*.h *.h)
+SRC = main.c Files/FileManager.c DataStructs/*.c Algorithms/FIFO.c Algorithms/LFU.c Algorithms/LRU.c Algorithms/OPT.c Algorithms/SecondChance.c 
+HEADERS = $(wildcard Files/*.h DataStructs/*.h Algorithms/*h *.h)
 
 CFLAGS = -Wall -Wextra -g `pkg-config --cflags gtk4`
 LIBS = `pkg-config --libs gtk4`
