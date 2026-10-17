@@ -330,6 +330,7 @@ void deleteP(MMU * self, int ptr) {
             while(nodePage->id != -2) {
                 if(nodePage->L_Address == ptr && nodePage->loaded == 1) 
                 {   
+                    self->availableMemory += self->pageSize;
                     deleteSpecificElementQueue(self->MemoryRAM,nodePage->id);
                 }
                 nodePage = getNextPtr(nodePage);
@@ -368,6 +369,7 @@ void killP(MMU * self, int pid) {
             while(page->id != -2) {
                 if(page->loaded == 1) 
                 {   
+                    self->availableMemory += self->pageSize;
                     deleteSpecificElementQueue(self->MemoryRAM,page->id);
                 }
                 page = getNextPtr(page);
