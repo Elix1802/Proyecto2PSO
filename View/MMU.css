@@ -1,0 +1,22 @@
+.stat-grid {
+    border-top: 1px solid ;
+    border-left: 1px solid;
+
+}
+
+.stat-cell {
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+    padding: 3px 12px;
+    min-width: 64px;
+}
+
+.stat-header {
+    background: alpha(currentColor, 0,08);
+    font-weight: bold;
+}
+
+.stat-alert{
+    background: #ffc7ce;
+    color: #9c0006;
+}
