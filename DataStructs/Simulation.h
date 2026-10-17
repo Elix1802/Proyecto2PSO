@@ -1,5 +1,5 @@
 #ifndef SIMULATION_H
-#define SIMULAATION_H
+#define SIMULATION_H
 #include "../Files/FileManager.h"
 #include "MMU.h"
 
