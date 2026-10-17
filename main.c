@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Files/FileManager.h"
-#include "DataStructs/Simulation.h"
+//#include "DataStructs/Simulation.h"
 
 
 static char *selected_file_path = NULL;
@@ -493,11 +493,21 @@ static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_
   
   }
   else{
-    g_print("//////////////////Start Simulation//////////////");
-    printf("-------Ejecutando-------------------\n");
-    printf("selected_file_path: %s \n", selected_file_path);
-    runFile(selected_file_path);
-    g_print("//////////////////Simulation Finished//////////////");
+    if(runFile(selected_file_path) == 0){
+        g_print("/El contenido del archivo no es valido\n");
+        GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+        GtkAlertDialog *alert = gtk_alert_dialog_new("❌ Error: Please select a valid file.");
+        gtk_alert_dialog_show(alert, parent_window);
+        g_object_unref(alert);
+        
+    }
+    else{
+        g_print("//////////////////Start Simulation//////////////\n");
+        printf("-------Ejecutando-------------------\n");
+        printf("selected_file_path: %s \n", selected_file_path);
+        runFile(selected_file_path);
+        g_print("//////////////////Simulation Finished//////////////\n");
+    }
   }
 }
 
@@ -707,9 +717,6 @@ static void activate(GtkApplication *app, gpointer user_data) {
         gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollAlg), tableAlg->widget);
         gtk_box_append(GTK_BOX(boxAlg), scrollAlg);
 
-
-        gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
-        gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
 
     
     } else {
