@@ -44,6 +44,9 @@ struct MMU {
 
   double wastedMemory;
 
+  //Estadísticas
+  
+
 };
 
 typedef struct MMU MMU;

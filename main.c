@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Files/FileManager.h"
-//#include "DataStructs/Simulation.h"
+#include "DataStructs/Simulation.h"
 
 
 static char *selected_file_path = NULL;
