@@ -6,7 +6,6 @@
 #include "DataStructs/Simulation.h"
 
 
-
 static char *selected_file_path = NULL;
 static char *generated_file_path = NULL;
 
@@ -31,12 +30,149 @@ typedef struct {
 
 static AppWidgets widgets;
 
+typedef struct{
+    int processes;
+    double simTime;
+    double ramKB, ramPct;
+    double vramKB, vramPct;
+    int loaded, unloaded;
+    double thrashTime, thrashPct;
+    double fragmentationKB;
+} MmuStats;
+
+typedef struct {
+    GtkWidget *root;
+    GtkWidget *processes;
+    GtkWidget *simTime;
+    GtkWidget *ramKB, *ramPct;
+    GtkWidget *vramKB, *vramPct;
+    GtkWidget *loaded, *unloaded;
+    GtkWidget *thrashTime, *thrashPct;
+    GtkWidget *fragmentation;
+
+} StatsPanel;
+
+static StatsPanel statsOpt;
+static StatsPanel statsAlg;
+
+static const double thrashingAlertPercent = 50.0;
+
+
+
 static const char *dropdownText(GtkWidget *dropdown){
     GObject * item = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(dropdown));
     if(item == NULL){
         return NULL;
     }
     return gtk_string_object_get_string(GTK_STRING_OBJECT(item));
+}
+
+static GtkWidget *statsGridNew(void) {
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
+    gtk_widget_add_css_class(grid, "stat-grid");
+    gtk_widget_set_hexpand(grid, FALSE);
+    gtk_widget_set_halign(grid, GTK_ALIGN_CENTER);
+    return grid;
+}
+
+//Estadisticas
+static GtkWidget *statsCell(GtkWidget *grid, const char *text, gboolean header,
+                            int col, int row, int colSpan, int rowSpan) {
+    GtkWidget *label = gtk_label_new(text);
+    gtk_widget_add_css_class(label, "stat-cell");
+    if (header) {
+        gtk_widget_add_css_class(label, "stat-header");
+    }
+    gtk_widget_set_hexpand(label, FALSE);
+    gtk_widget_set_vexpand(label, TRUE);
+    gtk_grid_attach(GTK_GRID(grid), label, col, row, colSpan, rowSpan);
+    return label;
+}
+
+static void statsPanelBuild(StatsPanel *p) {
+    GtkWidget *processesGrid = statsGridNew();
+    statsCell(processesGrid, "Processes", TRUE, 0, 0, 1, 1);
+    statsCell(processesGrid, "Sim-Time",  TRUE, 1, 0, 1, 1);
+    p->processes = statsCell(processesGrid, "0",  FALSE, 0, 1, 1, 1);
+    p->simTime   = statsCell(processesGrid, "0s", FALSE, 1, 1, 1, 1);
+
+    GtkWidget *ramGrid = statsGridNew();
+    statsCell(ramGrid, "RAM KB",   TRUE, 0, 0, 1, 1);
+    statsCell(ramGrid, "RAM %",    TRUE, 1, 0, 1, 1);
+    statsCell(ramGrid, "V-RAM KB", TRUE, 2, 0, 1, 1);
+    statsCell(ramGrid, "V-RAM %",  TRUE, 3, 0, 1, 1);
+    p->ramKB   = statsCell(ramGrid, "0", FALSE, 0, 1, 1, 1);
+    p->ramPct  = statsCell(ramGrid, "0", FALSE, 1, 1, 1, 1);
+    p->vramKB  = statsCell(ramGrid, "0", FALSE, 2, 1, 1, 1);
+    p->vramPct = statsCell(ramGrid, "0", FALSE, 3, 1, 1, 1);
+
+    GtkWidget *pagesGrid = statsGridNew();
+    statsCell(pagesGrid, "PAGES",         TRUE, 0, 0, 2, 1);
+    statsCell(pagesGrid, "Thrashing",     TRUE, 2, 0, 2, 1);
+    statsCell(pagesGrid, "Fragmentación", TRUE, 4, 0, 1, 1);
+    statsCell(pagesGrid, "LOADED",        TRUE, 0, 1, 1, 1);
+    statsCell(pagesGrid, "UNLOADED",      TRUE, 1, 1, 1, 1);
+    p->loaded        = statsCell(pagesGrid, "0",   FALSE, 0, 2, 1, 1);
+    p->unloaded      = statsCell(pagesGrid, "0",   FALSE, 1, 2, 1, 1);
+    p->thrashTime    = statsCell(pagesGrid, "0s",  FALSE, 2, 1, 1, 2);
+    p->thrashPct     = statsCell(pagesGrid, "0%",  FALSE, 3, 1, 1, 2);
+    p->fragmentation = statsCell(pagesGrid, "0KB", FALSE, 4, 1, 1, 2);
+
+    GtkSizeGroup *sameWidth = gtk_size_group_new(GTK_SIZE_GROUP_HORIZONTAL);
+    gtk_size_group_add_widget(sameWidth, processesGrid);
+    gtk_size_group_add_widget(sameWidth, ramGrid);
+    gtk_size_group_add_widget(sameWidth, pagesGrid);
+    g_object_unref(sameWidth);
+
+
+    p->root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_halign(p->root, GTK_ALIGN_CENTER);
+    gtk_widget_set_hexpand(p->root, FALSE);
+    gtk_widget_set_size_request(p->root, 250, -1);
+
+    gtk_box_append(GTK_BOX(p->root), processesGrid);
+    gtk_box_append(GTK_BOX(p->root), ramGrid);
+    gtk_box_append(GTK_BOX(p->root), pagesGrid);
+}
+
+static void statsSetText(GtkWidget *label, const char *format, ...) G_GNUC_PRINTF(2, 3);
+static void statsSetText(GtkWidget *label, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    char *text = g_strdup_vprintf(format, args);
+    va_end(args);
+    gtk_label_set_text(GTK_LABEL(label), text);
+    g_free(text);
+}
+
+static void statsSetAlert(GtkWidget *label, gboolean alert) {
+    if (alert) {
+        gtk_widget_add_css_class(label, "stat-alert");
+    } else {
+        gtk_widget_remove_css_class(label, "stat-alert");
+    }
+}
+
+static void statsPanelUpdate(StatsPanel *p, const MmuStats *s) {
+    statsSetText(p->processes, "%d", s->processes);
+    statsSetText(p->simTime, "%.0fs", s->simTime);
+
+    statsSetText(p->ramKB, "%.0f", s->ramKB);
+    statsSetText(p->ramPct, "%.0f", s->ramPct);
+    statsSetText(p->vramKB, "%.0f", s->vramKB);
+    statsSetText(p->vramPct, "%.0f", s->vramPct);
+
+    statsSetText(p->loaded, "%d", s->loaded);
+    statsSetText(p->unloaded, "%d", s->unloaded);
+
+    statsSetText(p->thrashTime, "%.0fs", s->thrashTime);
+    statsSetText(p->thrashPct, "%.0f%%", s->thrashPct);
+    gboolean alert = s->thrashPct > thrashingAlertPercent;
+    statsSetAlert(p->thrashTime, alert);
+    statsSetAlert(p->thrashPct, alert);
+
+    statsSetText(p->fragmentation, "%.0fKB", s->fragmentationKB);
 }
 
 //Tabla/////////////////////////////////
@@ -56,7 +192,6 @@ typedef struct {
 typedef struct {
     GtkWidget     *widget;   
     GtkWidget     *area;
-    GtkAdjustment *vadj;
     const PageRow *rows;     
     int            count;
     char           title[30];
@@ -104,7 +239,44 @@ static void drawCenteredText(cairo_t *cr, const char *text, double x, double y, 
 
 static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
     PageTable *t = (PageTable *)data;
-    double scroll = gtk_adjustment_get_value(t->vadj);
+    
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_paint(cr);
+
+    if (t->rows == NULL || t->count <= 0) {
+        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_set_font_size(cr, 12);
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        drawCenteredText(cr, t->title, 0, 0, width, 26);
+        
+        double colX[8 + 1];
+        colX[0] = 0;
+        for (int c = 0; c < 8; c++) {
+            colX[c + 1] = colX[c] + COL_FRAC[c] * width;
+            drawCenteredText(cr, COL_TITLES[c], colX[c], 26, colX[c + 1] - colX[c], 26);
+        }
+
+        cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+        cairo_set_line_width(cr, 1.0);
+        for(int c = 1; c < 8; c++){
+            cairo_move_to(cr, colX[c] + 0.5, 26);
+            cairo_line_to(cr, colX[c] + 0.5, height);
+        }
+        cairo_stroke(cr);
+
+        cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
+        cairo_move_to(cr, 0, 26 - 0.5);
+        cairo_line_to(cr, width, 26 - 0.5);
+        cairo_move_to(cr, 0, 52 - 0.5);
+        cairo_line_to(cr, width, 52 - 0.5);
+        cairo_stroke(cr);
+
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_rectangle(cr, 0.5, 0.5, width - 1, height -1);
+        cairo_stroke(cr);
+
+        return;
+    }
 
     double colX[8 + 1];
     colX[0] = 0;
@@ -112,24 +284,12 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
         colX[c + 1] = colX[c] + COL_FRAC[c] * width;
     }
 
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_paint(cr);
-
-    int first = (int)(scroll / 22);
-    int last  = (int)((scroll + height - 52) / 22);
-    if (first < 0) first = 0;
-    if (last >= t->count) last = t->count - 1;
-
-    cairo_save(cr);
-    cairo_rectangle(cr, 0, 52, width, height - 52);
-    cairo_clip(cr);
-
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 12);
 
-    for (int i = first; i <= last; i++) {
+    for (int i = 0; i < t->count; i++) {
         const PageRow *r = &t->rows[i];
-        double y = 26 + i * 22 - scroll;
+        double y = 52 + i * 22;
 
         const double *color = PALETTE[r->pid % PALETTE_SIZE];
         cairo_set_source_rgb(cr, color[0], color[1], color[2]);
@@ -146,16 +306,17 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
         }
     }
 
+    // Líneas horizontales de las filas
     cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
-    cairo_set_line_width(cr, 1);
-    for (int i = first; i <= last; i++) {
-        double y = 52 + (i + 1) * 22 - scroll - 0.5;
+    cairo_set_line_width(cr, 1.0);
+    for (int i = 0; i < t->count; i++) {
+        double y = 52 + (i + 1) * 22 - 0.5;
         cairo_move_to(cr, 0, y);
         cairo_line_to(cr, width, y);
     }
     cairo_stroke(cr);
-    cairo_restore(cr);
 
+    // Fondo blanco del encabezado
     cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_rectangle(cr, 0, 0, width, 52);
     cairo_fill(cr);
@@ -169,65 +330,42 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
         drawCenteredText(cr, COL_TITLES[c], colX[c], 26, colX[c + 1] - colX[c], 26);
     }
 
-    cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
+    // LÍNEAS VERTICALES ENTRE COLUMNAS (Forzando color oscuro y grosor de 1.0)
+    cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+    cairo_set_line_width(cr, 1.0);
     for (int c = 1; c < 8; c++) {
         cairo_move_to(cr, colX[c] + 0.5, 26);
         cairo_line_to(cr, colX[c] + 0.5, height);
     }
+    cairo_stroke(cr);
+
+    // Líneas horizontales del encabezado
+    cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
+    cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, 0, 26 - 0.5);
     cairo_line_to(cr, width, 26 - 0.5);
     cairo_move_to(cr, 0, 52 - 0.5);
     cairo_line_to(cr, width, 52 - 0.5);
     cairo_stroke(cr);
 
+    // Recuadro exterior
     cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 1.0);
     cairo_rectangle(cr, 0.5, 0.5, width - 1, height - 1);
     cairo_stroke(cr);
 }
 
-static void updateScroll(PageTable *t, int height) {
-    double viewport = (height > 52) ? height - 52 : 0;
-    double content  = (double)t->count * 22;
-    double upper    = (content > viewport) ? content : viewport;
-
-    gtk_adjustment_configure(t->vadj, gtk_adjustment_get_value(t->vadj),
-                             0, upper, 22, viewport * 0.9, viewport);
-}
-
-static void onTableResize(GtkDrawingArea *area, int width, int height, gpointer data) {
-    updateScroll((PageTable *)data, height);
-}
-
-static gboolean onTableScroll(GtkEventControllerScroll *ctrl, double dx, double dy, gpointer data) {
-    PageTable *t = (PageTable *)data;
-    gtk_adjustment_set_value(t->vadj, gtk_adjustment_get_value(t->vadj) + dy * 22 * 3);
-    return TRUE;
-}
 
 static PageTable *pageTableNew(void) {
     PageTable *t = g_new0(PageTable, 1);
 
     t->area = gtk_drawing_area_new();
     gtk_widget_set_hexpand(t->area, TRUE);
-    gtk_widget_set_vexpand(t->area, TRUE);
-    gtk_widget_set_size_request(t->area, 420, 300);
+    gtk_widget_set_vexpand(t->area, FALSE);
+    gtk_widget_set_size_request(t->area, 250, 150);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(t->area), drawTable, t, NULL);
-    g_signal_connect(t->area, "resize", G_CALLBACK(onTableResize), t);
 
-    t->vadj = gtk_adjustment_new(0, 0, 1, 22, 22 * 5, 1);
-    g_signal_connect_swapped(t->vadj, "value-changed", G_CALLBACK(gtk_widget_queue_draw), t->area);
-
-    GtkEventController *scroll = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
-    g_signal_connect(scroll, "scroll", G_CALLBACK(onTableScroll), t);
-    gtk_widget_add_controller(t->area, scroll);
-
-    GtkWidget *bar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, t->vadj);
-
-    t->widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_widget_set_hexpand(t->widget, TRUE);
-    gtk_widget_set_vexpand(t->widget, TRUE);
-    gtk_box_append(GTK_BOX(t->widget), t->area);
-    gtk_box_append(GTK_BOX(t->widget), bar);
+    t->widget = t->area;
     return t;
 }
 
@@ -239,9 +377,16 @@ static void pageTableSetTitle(PageTable *table, const char *title){
 static void pageTableSetRows(PageTable *t, const PageRow *rows, int count) {
     t->rows = rows;
     t->count = count;
-    updateScroll(t, gtk_widget_get_height(t->area));
+
+    int height = 52 +(t->count * 22);
+    if (height < 150){
+        height = 150;
+    }
+    gtk_widget_set_size_request(t->area, 250, height);
+    
     gtk_widget_queue_draw(t->area);
 }
+
 
 
 static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
@@ -519,6 +664,13 @@ static void ramBarUpdate(GtkWidget *area, int *dest, const int *src) {
 static void activate(GtkApplication *app, gpointer user_data) {
     GtkBuilder *builder = gtk_builder_new_from_file("View/MMU.ui");
     
+    GtkCssProvider * provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(provider,"View/MMU.css");
+    gtk_style_context_add_provider_for_display(
+        gdk_display_get_default(),
+        GTK_STYLE_PROVIDER(provider),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+    );
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "mainWindow"));
     GtkWidget *open_button = GTK_WIDGET(gtk_builder_get_object(builder, "btnOpenFile"));
     GtkWidget *file_label = GTK_WIDGET(gtk_builder_get_object(builder, "lblDirectory"));
@@ -536,6 +688,47 @@ static void activate(GtkApplication *app, gpointer user_data) {
     ramOptArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramOptArea"));
     ramAlgArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramAlgArea"));
 
+    GtkWidget *boxOpt = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuOpt"));
+    GtkWidget *boxAlg = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuAlg"));
+    if (boxOpt && boxAlg) {
+        tableOpt = pageTableNew();
+        tableAlg = pageTableNew();
+        pageTableSetTitle(tableOpt, "MMU - OPT");
+
+        GtkWidget *scrollOpt = gtk_scrolled_window_new();
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollOpt), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        gtk_widget_set_size_request(scrollOpt, 250, 300); 
+        gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollOpt), tableOpt->widget);
+        gtk_box_append(GTK_BOX(boxOpt), scrollOpt);
+
+        GtkWidget *scrollAlg = gtk_scrolled_window_new();
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollAlg), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        gtk_widget_set_size_request(scrollAlg, 250, 300); 
+        gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollAlg), tableAlg->widget);
+        gtk_box_append(GTK_BOX(boxAlg), scrollAlg);
+
+
+        gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
+        gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
+
+    
+    } else {
+        g_printerr("No se encontraron boxMmuOpt / boxMmuAlg en el .ui\n");
+    }
+
+    GtkWidget *boxStatsOpt = GTK_WIDGET(gtk_builder_get_object(builder, "boxStatsOpt"));
+    GtkWidget *boxStatsAlg = GTK_WIDGET(gtk_builder_get_object(builder, "boxStatsAlg"));
+    if(boxStatsOpt && boxStatsAlg){
+        statsPanelBuild(&statsOpt);
+        statsPanelBuild(&statsAlg);
+        gtk_box_append(GTK_BOX(boxStatsOpt), statsOpt.root);
+        gtk_box_append(GTK_BOX(boxStatsAlg), statsAlg.root);
+
+    }else{
+        g_printerr("drawingAreas not found");
+    }
+
+
     if(ramOptArea && ramAlgArea){
         ramBarSetup(ramOptArea, ramOptFrames);
         ramBarSetup(ramAlgArea, ramAlgFrames);
@@ -544,18 +737,6 @@ static void activate(GtkApplication *app, gpointer user_data) {
         g_printerr("drawingAreas not found");
     }
 
-    GtkWidget *boxOpt = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuOpt"));
-    GtkWidget *boxAlg = GTK_WIDGET(gtk_builder_get_object(builder, "boxMmuAlg"));
-    if (boxOpt && boxAlg) {
-        tableOpt = pageTableNew();
-        tableAlg = pageTableNew();
-        pageTableSetTitle(tableOpt, "MMU - OPT");
-        gtk_box_append(GTK_BOX(boxOpt), tableOpt->widget);
-        gtk_box_append(GTK_BOX(boxAlg), tableAlg->widget);
-
-    } else {
-        g_printerr("No se encontraron boxMmuOpt / boxMmuAlg en el .ui\n");
-    }
     
 
     
@@ -587,6 +768,8 @@ static void activate(GtkApplication *app, gpointer user_data) {
     
     g_object_unref(builder);
 }
+
+
 
 int main(int argc, char **argv) {
     GtkApplication *app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
