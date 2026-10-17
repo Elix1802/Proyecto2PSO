@@ -24,7 +24,6 @@ struct MMU {
   int pageSize;
   int algID;
   int elapsedTime;
-  int trashingTime;
   DLinkedList * pageTable;
   NodePage ** frames;
   int frameCount; //Cantidad de marcos
@@ -45,7 +44,12 @@ struct MMU {
   double wastedMemory;
 
   //Estadísticas
-  
+  int processes;
+  double ramKB, ramPct;
+  double vramKB, vramPct;
+  int loaded, unloaded;
+  double thrashTime, thrashPct;
+  double fragmentationKB;
 
 };
 

@@ -33,7 +33,19 @@ MMU * createMMU(int algID, int totalMemory, int pageSize) {
     mmu->nextPageId = 1;
     mmu->nextDiskId = 100;
     mmu->frameCount = totalMemory / pageSize;
+
+    //Estadísticas
     mmu->wastedMemory = 0.0;
+    mmu->processes = 0;
+    mmu->ramKB = 0;
+    mmu->ramPct = 0;
+    mmu->vramKB = 0;
+    mmu->vramPct = 0;
+    mmu->loaded = 0; 
+    mmu->unloaded = 0;
+    mmu->thrashTime = 0;
+    mmu->thrashPct = 0;
+    mmu->fragmentationKB = 0;
 
     mmu->frames = (NodePage **) calloc(mmu->frameCount, sizeof(NodePage *));
     if (mmu->frames == NULL) {
@@ -236,6 +248,7 @@ int newP(MMU * self, int pid, int size) {
     NodeProcess * newProcess = getProcessTableValue(self->processTable, pid);
     if(newProcess  == NULL) 
     {   
+        self->processes++;
         newProcess = createNodeProcess(pid);
         addProcessTableElement(self->processTable, pid, newProcess); //Tabla de procesos
 

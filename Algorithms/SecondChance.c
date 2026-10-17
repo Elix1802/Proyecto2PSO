@@ -9,6 +9,9 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
     if(Memory->cantidad < 100) {
         enqueue(Memory, nodePage);
         mmu->elapsedTime+=5;
+        mmu->ramKB += mmu->pageSize;
+        mmu->ramPct = mmu->ramKB * 100 / (double) mmu->totalMemory;
+        mmu->loaded++;
         return;
     }
 
@@ -42,7 +45,11 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
 void bringPageToMemorySecondChance(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr, MMU * mmu) {
     NodePage * nodePage = getDiskTableValue(diskTable, diskPos);
     if(nodePage != NULL) {
-        mmu->trashingTime += 5;
+        mmu->thrashTime+=5;
+        mmu->thrashPct = mmu->thrashTime * 100 / (double) mmu->elapsedTime;  
+        mmu->vramKB -= mmu->pageSize;
+        mmu->vramPct = mmu->vramKB * 100 / 512.00;
+        mmu->unloaded--;
         bringFromDisk(nodePage);
         insertionPageSecondChance(Memory, nodePage, diskTable, ptrDiskAddr, mmu);
 

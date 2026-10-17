@@ -6,7 +6,7 @@
 
 
 
-int DIC_SIZE_DISK = 256;
+int DIC_SIZE_DISK = 512;
 
 
 int hashFunctionDisk(int key) {
