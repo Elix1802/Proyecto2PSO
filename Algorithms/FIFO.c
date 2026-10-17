@@ -30,7 +30,6 @@ void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTabl
 
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
 
-    //printNodePage(nodePage);
     nodePage->M_Address = Memory->final;
     enqueue(Memory, nodePage);
 

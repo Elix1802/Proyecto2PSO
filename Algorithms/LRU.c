@@ -26,7 +26,6 @@ void insertionPageLRU(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
 
     addDiskTableElement(diskTable, *ptrDiskAddr, lastRecentlyUsedPage);
 
-    //printNodePage(nodePage);
     nodePage->M_Address = Memory->final;
     enqueue(Memory, nodePage);
 
