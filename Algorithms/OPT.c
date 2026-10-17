@@ -14,12 +14,14 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
     if(Memory->cantidad < 100) {
         nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        destroyStack(stack);
         mmu->elapsedTime+=5;
         return;
     }
 
     for(int i = Memory->frente; i<Memory->final;i++) {
         if(Memory->datos[i]->id == nodePage->id) {
+            destroyStack(stack);
             mmu->elapsedTime++;
             return;}
     }
@@ -63,7 +65,7 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
 
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
     mmu->elapsedTime+=5;
-
+    destroyStack(stack);
 }
 
 void bringPageToMemoryOPT(Queue * Memory, DiskTable * diskTable, int diskPos, int *  ptrDiskAddr,NodePage ** futurePredicts, MMU * mmu ) {
