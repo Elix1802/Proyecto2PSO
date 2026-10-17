@@ -3,20 +3,22 @@
 
 #include "NodePage.h"
 
+typedef struct KeyValueDisk KeyValueDisk;
+typedef struct DiskTable DiskTable;
+
+
 struct KeyValueDisk {
     int key; //Indice en memoria                     
     NodePage * value;
     struct KeyValueDisk * next;            
 };
 
-typedef struct KeyValueDisk KeyValueDisk;
 
 
 struct DiskTable {
     KeyValueDisk ** values;
 };
 
-typedef struct DiskTable DiskTable;
 
 DiskTable * createDiskTable();
 void destroyDiskTable(DiskTable * self);

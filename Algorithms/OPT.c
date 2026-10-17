@@ -23,7 +23,8 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
         if(Memory->datos[i]->id == nodePage->id) {
             destroyStack(stack);
             mmu->elapsedTime++;
-            return;}
+            return;
+        }
     }
 
     int found = 0;
@@ -59,7 +60,6 @@ void insertionPageOPT(Queue * Memory, NodePage * nodePage, DiskTable * diskTable
     addDiskTableElement(diskTable, *ptrDiskAddr, oldestNode);
     
 
-    //printNodePage(nodePage);
     nodePage->M_Address = Memory->final;
     enqueue(Memory, nodePage);
 
