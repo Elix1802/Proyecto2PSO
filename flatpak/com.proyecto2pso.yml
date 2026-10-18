@@ -1,0 +1,28 @@
+id: com.proyecto2pso.Proyecto2PSO
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: proyecto2pso
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+
+modules:
+  - name: Proyecto2PSO
+    buildsystem: simple
+    build-commands:
+      - make
+      - install -Dm755 app /app/bin/app
+      - install -Dm755 flatpak/run.sh /app/bin/proyecto2pso
+      - install -Dm644 View/MMU.ui /app/share/Proyecto2PSO/View/MMU.ui
+      - install -Dm644 View/MMU.css /app/share/Proyecto2PSO/View/MMU.css
+      - install -d /app/share/Proyecto2PSO/Files
+      - cp -r Files/Sequences /app/share/Proyecto2PSO/Files/
+    sources:
+      - type: dir
+        path: ..
+
+

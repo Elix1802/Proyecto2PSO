@@ -453,12 +453,31 @@ static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
         return;
     }
 
-    g_mkdir_with_parents("Files/Sequences", 0755);
+    char *sequenceDir = g_build_filename(
+        g_get_user_data_dir(),
+        "Sequences",
+        NULL
+    );
 
-    char fileName[128];
-    snprintf(fileName, sizeof fileName,
-             "Files/Sequences/SecuenciaProcesos-S%u-P%d-N%d.txt", seed, P, N);
-    createFile(fileName, &list);
+    if (g_mkdir_with_parents(sequenceDir, 0755) != 0) {
+        g_printerr("No se pudo crear el directorio: %s\n", sequenceDir);
+        g_free(sequenceDir);
+        freeInstructionList(&list);
+        return;
+    }
+
+    char *fileName = g_strdup_printf(
+        "%s/SecuenciaProcesos-S%u-P%d-N%d.txt",
+        sequenceDir, seed, P, N
+    );
+
+    if (createFile(fileName, &list) != 0) {
+        g_printerr("No se pudo crear el archivo: %s\n", fileName);
+        g_free(fileName);
+        g_free(sequenceDir);
+        freeInstructionList(&list);
+        return;
+    }
 
     freeInstructionList(&list);
 

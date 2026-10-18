@@ -1,0 +1,5 @@
+# Flatpak build artifacts
+/build-dir/
+/build-state/
+/.flatpak-builder/
+

@@ -12,7 +12,7 @@
 }
 
 .stat-header {
-    background: alpha(currentColor, 0,08);
+    background: alpha(currentColor, 0.08);
     font-weight: bold;
 }
 
