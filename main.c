@@ -5,7 +5,6 @@
 #include "Files/FileManager.h"
 #include "DataStructs/Simulation.h"
 
-
 //Declaraciones////////////////////////////////////////////////
 //Archivo
 static char *selected_file_path = NULL;
@@ -18,9 +17,20 @@ static int ramOptFrames[100];
 static int ramAlgFrames[100];
 
 //Simulacion
+typedef enum { SIM_IDLE, SIM_RUNNING, SIM_PAUSED, SIM_DONE } SimState;
+
 static InstructionList currentList = {0};
-static Simulation *currentSim =  NULL;
+static Simulation *currentSim = NULL;
 static guint simTimer = 0;
+static SimState simState = SIM_IDLE;
+static const guint simTickMs = 100;
+
+static void refreshView(void);
+static void on_pause_clicked(GtkButton *button, gpointer user_data);
+static void clearView(void);
+static void updateButtons(void);
+static void onSimFinished(void);
+static void openSimWindow(void);
 
 static void stopSimulation(void){
     if(simTimer != 0){
@@ -32,20 +42,27 @@ static void stopSimulation(void){
         currentSim = NULL;
     }
     freeInstructionList(&currentList);
+    simState = SIM_IDLE;
 }
 
 static gboolean onSimTick(gpointer data){
-    if(!simStep){
+    (void)data;
+    if(currentSim == NULL || !simStep(currentSim)){
         simTimer = 0;
+        simState = SIM_DONE;
+        if(currentSim != NULL){
+            printf("FIN: OPT t=%d thrash=%.1f%% | ALG t=%d thrash=%.1f%%\n",
+                   currentSim->opt->elapsedTime, currentSim->opt->thrashPct,
+                   currentSim->alg->elapsedTime, currentSim->alg->thrashPct);
+            fflush(stdout);
+        }
+        onSimFinished();
+        updateButtons();
         return G_SOURCE_REMOVE;
     }
-    //logica
+    refreshView();
     return G_SOURCE_CONTINUE;
 }
-
-
-
-
 
 typedef struct {
     GtkWidget *spinSeed;
@@ -55,6 +72,8 @@ typedef struct {
     GtkWidget *lblAlgName;
     GtkWidget *btnDownload;
     GtkWidget *btnStartSimulation;
+    GtkWidget *btnPause;
+    GtkWidget *lblDirectory;
 }AppWidgets;
 
 static AppWidgets widgets;
@@ -221,6 +240,7 @@ typedef struct {
 typedef struct {
     GtkWidget     *widget;   
     GtkWidget     *area;
+    GtkAdjustment *vadj;
     const PageRow *rows;     
     int            count;
     char           title[30];
@@ -267,45 +287,10 @@ static void drawCenteredText(cairo_t *cr, const char *text, double x, double y, 
 }
 
 static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
+    (void)area;
     PageTable *t = (PageTable *)data;
-    
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_paint(cr);
-
-    if (t->rows == NULL || t->count <= 0) {
-        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-        cairo_set_font_size(cr, 12);
-        cairo_set_source_rgb(cr, 0, 0, 0);
-        drawCenteredText(cr, t->title, 0, 0, width, 26);
-        
-        double colX[8 + 1];
-        colX[0] = 0;
-        for (int c = 0; c < 8; c++) {
-            colX[c + 1] = colX[c] + COL_FRAC[c] * width;
-            drawCenteredText(cr, COL_TITLES[c], colX[c], 26, colX[c + 1] - colX[c], 26);
-        }
-
-        cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
-        cairo_set_line_width(cr, 1.0);
-        for(int c = 1; c < 8; c++){
-            cairo_move_to(cr, colX[c] + 0.5, 26);
-            cairo_line_to(cr, colX[c] + 0.5, height);
-        }
-        cairo_stroke(cr);
-
-        cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
-        cairo_move_to(cr, 0, 26 - 0.5);
-        cairo_line_to(cr, width, 26 - 0.5);
-        cairo_move_to(cr, 0, 52 - 0.5);
-        cairo_line_to(cr, width, 52 - 0.5);
-        cairo_stroke(cr);
-
-        cairo_set_source_rgb(cr, 0, 0, 0);
-        cairo_rectangle(cr, 0.5, 0.5, width - 1, height -1);
-        cairo_stroke(cr);
-
-        return;
-    }
+    const double headerH = 52.0;
+    const double rowH = 22.0;
 
     double colX[8 + 1];
     colX[0] = 0;
@@ -313,71 +298,89 @@ static void drawTable(GtkDrawingArea *area, cairo_t *cr, int width, int height, 
         colX[c + 1] = colX[c] + COL_FRAC[c] * width;
     }
 
-    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 12);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_paint(cr);
 
-    for (int i = 0; i < t->count; i++) {
-        const PageRow *r = &t->rows[i];
-        double y = 52 + i * 22;
+    double clipTop, clipBottom;
+    cairo_clip_extents(cr, NULL, &clipTop, NULL, &clipBottom);
 
-        const double *color = PALETTE[r->pid % PALETTE_SIZE];
-        cairo_set_source_rgb(cr, color[0], color[1], color[2]);
-        cairo_rectangle(cr, 0, y, width, 22);
-        cairo_fill(cr);
+    if (t->rows != NULL && t->count > 0) {
+        int first = (int)((clipTop - headerH) / rowH);
+        int last = (int)((clipBottom - headerH) / rowH) + 1;
+        if (first < 0) first = 0;
+        if (last > t->count) last = t->count;
 
-        cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
-        for (int c = 0; c < 8; c++) {
-            char buf[32];
-            cellText(r, c, buf, sizeof buf);
-            if (buf[0] != '\0') {
-                drawCenteredText(cr, buf, colX[c], y, colX[c + 1] - colX[c], 22);
+        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_set_font_size(cr, 12);
+
+        for (int i = first; i < last; i++) {
+            const PageRow *r = &t->rows[i];
+            double y = headerH + i * rowH;
+
+            const double *color = PALETTE[r->pid % PALETTE_SIZE];
+            cairo_set_source_rgb(cr, color[0], color[1], color[2]);
+            cairo_rectangle(cr, 0, y, width, rowH);
+            cairo_fill(cr);
+
+            cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
+            for (int c = 0; c < 8; c++) {
+                char buf[32];
+                cellText(r, c, buf, sizeof buf);
+                if (buf[0] != '\0') {
+                    drawCenteredText(cr, buf, colX[c], y, colX[c + 1] - colX[c], rowH);
+                }
             }
         }
+
+        cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
+        cairo_set_line_width(cr, 1.0);
+        for (int i = first; i < last; i++) {
+            double y = headerH + (i + 1) * rowH - 0.5;
+            cairo_move_to(cr, 0, y);
+            cairo_line_to(cr, width, y);
+        }
+        cairo_stroke(cr);
     }
 
-    // Líneas horizontales de las filas
-    cairo_set_source_rgb(cr, 0.65, 0.65, 0.65);
+    cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
     cairo_set_line_width(cr, 1.0);
-    for (int i = 0; i < t->count; i++) {
-        double y = 52 + (i + 1) * 22 - 0.5;
-        cairo_move_to(cr, 0, y);
-        cairo_line_to(cr, width, y);
+    for (int c = 1; c < 8; c++) {
+        cairo_move_to(cr, colX[c] + 0.5, headerH);
+        cairo_line_to(cr, colX[c] + 0.5, height);
     }
     cairo_stroke(cr);
 
-    // Fondo blanco del encabezado
+    double top = (t->vadj != NULL) ? gtk_adjustment_get_value(t->vadj) : 0.0;
+    if (top > height - headerH) top = height - headerH;
+    if (top < 0) top = 0;
+
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, 0, 0, width, 52);
+    cairo_rectangle(cr, 0, top, width, headerH);
     cairo_fill(cr);
 
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12);
     cairo_set_source_rgb(cr, 0, 0, 0);
-
-    drawCenteredText(cr, t->title, 0, 0, width, 26);
+    drawCenteredText(cr, t->title, 0, top, width, 26);
     for (int c = 0; c < 8; c++) {
-        drawCenteredText(cr, COL_TITLES[c], colX[c], 26, colX[c + 1] - colX[c], 26);
+        drawCenteredText(cr, COL_TITLES[c], colX[c], top + 26, colX[c + 1] - colX[c], 26);
     }
 
-    // LÍNEAS VERTICALES ENTRE COLUMNAS (Forzando color oscuro y grosor de 1.0)
     cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
     cairo_set_line_width(cr, 1.0);
     for (int c = 1; c < 8; c++) {
-        cairo_move_to(cr, colX[c] + 0.5, 26);
-        cairo_line_to(cr, colX[c] + 0.5, height);
+        cairo_move_to(cr, colX[c] + 0.5, top + 26);
+        cairo_line_to(cr, colX[c] + 0.5, top + headerH);
     }
     cairo_stroke(cr);
 
-    // Líneas horizontales del encabezado
     cairo_set_source_rgb(cr, 0.4, 0.4, 0.4);
-    cairo_set_line_width(cr, 1.0);
-    cairo_move_to(cr, 0, 26 - 0.5);
-    cairo_line_to(cr, width, 26 - 0.5);
-    cairo_move_to(cr, 0, 52 - 0.5);
-    cairo_line_to(cr, width, 52 - 0.5);
+    cairo_move_to(cr, 0, top + 26 - 0.5);
+    cairo_line_to(cr, width, top + 26 - 0.5);
+    cairo_move_to(cr, 0, top + headerH - 0.5);
+    cairo_line_to(cr, width, top + headerH - 0.5);
     cairo_stroke(cr);
 
-    // Recuadro exterior
     cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_set_line_width(cr, 1.0);
     cairo_rectangle(cr, 0.5, 0.5, width - 1, height - 1);
@@ -403,6 +406,17 @@ static void pageTableSetTitle(PageTable *table, const char *title){
 
     gtk_widget_queue_draw(table->area);
 }
+static void onTableScrolled(GtkAdjustment *adj, gpointer data) {
+    (void)adj;
+    PageTable *t = (PageTable *)data;
+    gtk_widget_queue_draw(t->area);
+}
+
+static void pageTableAttachScroll(PageTable *t, GtkScrolledWindow *sw) {
+    t->vadj = gtk_scrolled_window_get_vadjustment(sw);
+    g_signal_connect(t->vadj, "value-changed", G_CALLBACK(onTableScrolled), t);
+}
+
 static void pageTableSetRows(PageTable *t, const PageRow *rows, int count) {
     t->rows = rows;
     t->count = count;
@@ -456,6 +470,14 @@ static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
     g_free(generated_file_path);
     generated_file_path = g_strdup(fileName);
 
+    g_free(selected_file_path);
+    selected_file_path = g_strdup(fileName);
+    if(w->lblDirectory){
+        char *baseName = g_path_get_basename(fileName);
+        gtk_label_set_text(GTK_LABEL(w->lblDirectory), baseName);
+        g_free(baseName);
+    }
+
     if(w->btnDownload){
         gtk_widget_set_sensitive(w->btnDownload, TRUE);
     }
@@ -506,64 +528,80 @@ static void on_save_dialog_response(GObject *source, GAsyncResult *result, gpoin
     g_object_unref(dialog);
 }
 
-static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_data) {
-
-  g_print("1. Entra a funcion");
-
-  GtkLabel *label = GTK_LABEL(user_data);
-  
-  AppWidgets *w = (AppWidgets *)user_data;
-
-  if (selected_file_path == NULL){
-    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
-    GtkAlertDialog *alert = gtk_alert_dialog_new("⚠️ Please select or create a file");
+static void showAlertFor(GtkWidget *from, const char *message) {
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(from));
+    GtkAlertDialog *alert = gtk_alert_dialog_new("%s", message);
     gtk_alert_dialog_show(alert, parent_window);
     g_object_unref(alert);
-    return;
+}
 
-  
-  }
-    //FALTA 
+static void on_start_simulation_button_clicked(GtkButton *button, gpointer user_data) {
+    AppWidgets *w = (AppWidgets *)user_data;
+
+    if (selected_file_path == NULL) {
+        showAlertFor(GTK_WIDGET(button), "⚠️ Please select or create a file");
+        return;
+    }
+
     stopSimulation();
-    g_print("2. Hace stopSimulation");
-    InstructionList list;
+    clearView();
+    updateButtons();
 
-    if(loadInstructions(selected_file_path, &list) != 0){ //FALTA revisar
-
-        g_print("3. Hace loadInstructions");
-        g_print("/El contenido del archivo no es valido\n");
-        GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
-        GtkAlertDialog *alert = gtk_alert_dialog_new("❌ Error: Please select a valid file.");
-        gtk_alert_dialog_show(alert, parent_window);
-        g_object_unref(alert);
-        return;
-        
-    }
-
-    int algID = (int)gtk_drop_down_get_selected(GTK_DROP_DOWN(w->cmbAlgorithm)) + FIFO; //FALTA revisar + FIFO
-   
-    currentSim = simCreate(&currentList, algID);
-
-    if (currentSim == NULL){
+    if (loadInstructions(selected_file_path, &currentList) != 0) {
         freeInstructionList(&currentList);
-
-        g_print("/No se pudo crear la simulacion\n");
-        GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
-        GtkAlertDialog *alert = gtk_alert_dialog_new("❌ Error: Simulation can't be created");
-        gtk_alert_dialog_show(alert, parent_window);
-        g_object_unref(alert);
+        showAlertFor(GTK_WIDGET(button), "❌ Error: Please select a valid file.");
         return;
     }
-    simTimer = g_timeout_add(100, onSimTick, NULL);
-    g_print("//////////////////Start Simulation//////////////\n");
-    printf("-------Ejecutando-------------------\n");
-    printf("selected_file_path: %s \n", selected_file_path);
-    runFile(selected_file_path);
-    g_print("//////////////////Simulation Finished//////////////\n");
-  
+
+    int bad = simValidate(&currentList);
+    if (bad != 0) {
+        char msg[128];
+        if (bad > 0 && bad <= currentList.count) {
+            snprintf(msg, sizeof msg, "❌ Invalid operation at line %d", currentList.instructions[bad - 1].line);
+        } else {
+            snprintf(msg, sizeof msg, "❌ Error: Please select a valid file.");
+        }
+        freeInstructionList(&currentList);
+        showAlertFor(GTK_WIDGET(button), msg);
+        return;
+    }
+
+    int algID = (int)gtk_drop_down_get_selected(GTK_DROP_DOWN(w->cmbAlgorithm)) + FIFO;
+
+    currentSim = simCreate(&currentList, algID);
+    if (currentSim == NULL) {
+        freeInstructionList(&currentList);
+        showAlertFor(GTK_WIDGET(button), "❌ Error: Simulation can't be created");
+        return;
+    }
+
+    simState = SIM_RUNNING;
+    simTimer = g_timeout_add(simTickMs, onSimTick, NULL);
+    refreshView();
+    updateButtons();
+    openSimWindow();
+}
+
+static void on_pause_clicked(GtkButton *button, gpointer user_data) {
+    (void)button;
+    (void)user_data;
+    if (currentSim == NULL) return;
+
+    if (simState == SIM_RUNNING) {
+        if (simTimer != 0) {
+            g_source_remove(simTimer);
+            simTimer = 0;
+        }
+        simState = SIM_PAUSED;
+    } else if (simState == SIM_PAUSED) {
+        simState = SIM_RUNNING;
+        simTimer = g_timeout_add(simTickMs, onSimTick, NULL);
+    }
+    updateButtons();
 }
 
 static void on_download_clicked(GtkButton *button, gpointer user_data) {
+    (void)user_data;
     if (generated_file_path == NULL) return;
 
     GtkWindow *parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
@@ -580,6 +618,7 @@ static void on_download_clicked(GtkButton *button, gpointer user_data) {
 
 
 static void on_algorithm_changed(GObject *dropdown, GParamSpec *pspec, gpointer user_data) {
+    (void)pspec;
     AppWidgets *w = (AppWidgets *)user_data;
 
     const char *name = dropdownText(GTK_WIDGET(dropdown));
@@ -656,6 +695,7 @@ static void pidColor(int pid, double *r, double *g, double *b) {
 }
 
 static void drawRamBar(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
+    (void)area;
     const int *frames = (const int *)data;
 
     for (int i = 0; i < 100; i++) {
@@ -689,6 +729,8 @@ static void drawRamBar(GtkDrawingArea *area, cairo_t *cr, int width, int height,
 
 static gboolean onRamQueryTooltip(GtkWidget *widget, int x, int y, gboolean keyboard,
                                   GtkTooltip *tooltip, gpointer data) {
+    (void)y;
+    (void)keyboard;
     const int *frames = (const int *)data;
     int width = gtk_widget_get_width(widget);
     if (width <= 0) return FALSE;
@@ -723,7 +765,227 @@ static void ramBarUpdate(GtkWidget *area, int *dest, const int *src) {
 
 
 
+static PageRow *rowsOpt = NULL;
+static PageRow *rowsAlg = NULL;
+static int rowsOptCap = 0;
+static int rowsAlgCap = 0;
+
+static void collectStats(const MMU *m, MmuStats *s) {
+    s->processes = m->processes;
+    s->simTime = m->elapsedTime;
+    s->ramKB = m->ramKB;
+    s->ramPct = m->ramPct;
+    s->vramKB = m->vramKB;
+    s->vramPct = m->vramPct;
+    s->loaded = m->loaded;
+    s->unloaded = m->unloaded;
+    s->thrashTime = m->thrashTime;
+    s->thrashPct = m->thrashPct;
+    s->fragmentationKB = m->fragmentationKB;
+}
+
+static int collectRows(const MMU *m, PageRow **rows, int *cap) {
+    int n = 0;
+    NodePage *p = m->pageTable->head;
+
+    while (p != NULL) {
+        if (p->id >= 0) {
+            if (n >= *cap) {
+                int newCap = (*cap == 0) ? 256 : *cap * 2;
+                PageRow *grown = realloc(*rows, newCap * sizeof(PageRow));
+                if (grown == NULL) return n;
+                *rows = grown;
+                *cap = newCap;
+            }
+            PageRow *r = &(*rows)[n++];
+            r->pageId = p->id;
+            r->pid = p->parentId;
+            r->loaded = p->loaded;
+            r->lAddr = p->L_Address;
+            r->mAddr = p->loaded ? p->M_Address : -1;
+            r->dAddr = p->loaded ? -1 : p->D_Address;
+            r->loadedT = p->loaded ? p->loaded_T : -1;
+            r->mark = p->Mark;
+        }
+        if (p == m->pageTable->tail) break;
+        p = p->nextPtr;
+    }
+    return n;
+}
+
+static void collectFrames(const MMU *m, int *dest) {
+    for (int i = 0; i < 100; i++) {
+        dest[i] = (i < m->frameCount && m->frames[i] != NULL) ? m->frames[i]->parentId : 0;
+    }
+}
+
+static MmuStats snapOpt;
+static MmuStats snapAlg;
+static gboolean haveSnap = FALSE;
+
+static void refreshView(void) {
+    if (currentSim == NULL) return;
+
+    MmuStats stats;
+    collectStats(currentSim->opt, &stats);
+    statsPanelUpdate(&statsOpt, &stats);
+    MmuStats sOpt = stats;
+    collectStats(currentSim->alg, &stats);
+    statsPanelUpdate(&statsAlg, &stats);
+
+    if (currentSim->step > 0) {
+        const Instruction *last = &currentSim->list->instructions[currentSim->step - 1];
+        if (last->operation != KILL) {
+            snapOpt = sOpt;
+            snapAlg = stats;
+            haveSnap = TRUE;
+        }
+    }
+
+    int n = collectRows(currentSim->opt, &rowsOpt, &rowsOptCap);
+    pageTableSetRows(tableOpt, rowsOpt, n);
+    n = collectRows(currentSim->alg, &rowsAlg, &rowsAlgCap);
+    pageTableSetRows(tableAlg, rowsAlg, n);
+
+    int snap[100];
+    collectFrames(currentSim->opt, snap);
+    ramBarUpdate(ramOptArea, ramOptFrames, snap);
+    collectFrames(currentSim->alg, snap);
+    ramBarUpdate(ramAlgArea, ramAlgFrames, snap);
+}
+
+static void keepFinalStats(const MmuStats *snap, const MMU *m, StatsPanel *panel) {
+    MmuStats s = *snap;
+    s.simTime = m->elapsedTime;
+    s.thrashTime = m->thrashTime;
+    s.thrashPct = m->thrashPct;
+    statsPanelUpdate(panel, &s);
+}
+
+static void onSimFinished(void) {
+    if (currentSim == NULL || !haveSnap) return;
+    keepFinalStats(&snapOpt, currentSim->opt, &statsOpt);
+    keepFinalStats(&snapAlg, currentSim->alg, &statsAlg);
+}
+
+static void clearView(void) {
+    haveSnap = FALSE;
+    MmuStats zero = {0};
+    statsPanelUpdate(&statsOpt, &zero);
+    statsPanelUpdate(&statsAlg, &zero);
+
+    if (tableOpt) pageTableSetRows(tableOpt, NULL, 0);
+    if (tableAlg) pageTableSetRows(tableAlg, NULL, 0);
+
+    int empty[100] = {0};
+    if (ramOptArea) ramBarUpdate(ramOptArea, ramOptFrames, empty);
+    if (ramAlgArea) ramBarUpdate(ramAlgArea, ramAlgFrames, empty);
+}
+
+static void updateButtons(void) {
+    if (widgets.btnPause == NULL) return;
+
+    gtk_widget_set_sensitive(widgets.btnPause, simState == SIM_RUNNING || simState == SIM_PAUSED);
+    gtk_button_set_label(GTK_BUTTON(widgets.btnPause), simState == SIM_PAUSED ? "Resume" : "Pause");
+}
+
+static void onAppShutdown(GApplication *app, gpointer user_data) {
+    (void)app;
+    (void)user_data;
+    stopSimulation();
+    free(rowsOpt);
+    free(rowsAlg);
+    rowsOpt = NULL;
+    rowsAlg = NULL;
+}
+
+static GtkWidget *mainWindowW = NULL;
+static GtkWidget *simWindow = NULL;
+
+static gboolean onSimWindowClose(GtkWindow *win, gpointer data) {
+    (void)win;
+    (void)data;
+    stopSimulation();
+    clearView();
+    updateButtons();
+    if (mainWindowW != NULL) {
+        gtk_widget_set_visible(mainWindowW, TRUE);
+        gtk_window_present(GTK_WINDOW(mainWindowW));
+    }
+    return FALSE;
+}
+
+static void onBackClicked(GtkButton *button, gpointer data) {
+    (void)button;
+    (void)data;
+    if (simWindow != NULL) gtk_window_close(GTK_WINDOW(simWindow));
+}
+
+static void moveToBox(GtkWidget *child, GtkWidget *newParent) {
+    GtkWidget *oldParent = gtk_widget_get_parent(child);
+    g_object_ref(child);
+    if (oldParent != NULL && GTK_IS_BOX(oldParent)) {
+        gtk_box_remove(GTK_BOX(oldParent), child);
+    }
+    gtk_box_append(GTK_BOX(newParent), child);
+    g_object_unref(child);
+}
+
+static void buildSimWindow(GtkApplication *app, GtkWidget *mainWin, GtkWidget *ramOptBox, GtkWidget *ramAlgBox, GtkWidget *simBox) {
+    GtkWidget *sepA = gtk_widget_get_prev_sibling(ramOptBox);
+    GtkWidget *sepB = gtk_widget_get_prev_sibling(simBox);
+
+    GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_margin_top(content, 15);
+    gtk_widget_set_margin_bottom(content, 15);
+    gtk_widget_set_margin_start(content, 15);
+    gtk_widget_set_margin_end(content, 15);
+
+    GtkWidget *toolbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+    GtkWidget *btnBack = gtk_button_new_with_label("◀ Back");
+    widgets.btnPause = gtk_button_new_with_label("Pause");
+    gtk_box_append(GTK_BOX(toolbar), btnBack);
+    gtk_box_append(GTK_BOX(toolbar), widgets.btnPause);
+    gtk_box_append(GTK_BOX(content), toolbar);
+    gtk_box_append(GTK_BOX(content), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL));
+
+    moveToBox(ramOptBox, content);
+    moveToBox(ramAlgBox, content);
+    gtk_box_append(GTK_BOX(content), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL));
+    moveToBox(simBox, content);
+
+    GtkWidget *mainBox = gtk_widget_get_parent(sepA ? sepA : sepB);
+    if (mainBox != NULL && GTK_IS_BOX(mainBox)) {
+        if (sepA) gtk_box_remove(GTK_BOX(mainBox), sepA);
+        if (sepB) gtk_box_remove(GTK_BOX(mainBox), sepB);
+    }
+
+    GtkWidget *scroll = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), content);
+
+    simWindow = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(simWindow), "MMU - Simulation");
+    gtk_window_set_default_size(GTK_WINDOW(simWindow), 1100, 750);
+    gtk_window_set_child(GTK_WINDOW(simWindow), scroll);
+    gtk_window_set_hide_on_close(GTK_WINDOW(simWindow), TRUE);
+    gtk_window_set_application(GTK_WINDOW(simWindow), app);
+
+    g_signal_connect(simWindow, "close-request", G_CALLBACK(onSimWindowClose), NULL);
+    g_signal_connect(btnBack, "clicked", G_CALLBACK(onBackClicked), NULL);
+    g_signal_connect(widgets.btnPause, "clicked", G_CALLBACK(on_pause_clicked), NULL);
+
+    mainWindowW = mainWin;
+    gtk_window_set_default_size(GTK_WINDOW(mainWin), 700, 360);
+}
+
+static void openSimWindow(void) {
+    if (simWindow == NULL) return;
+    if (mainWindowW != NULL) gtk_widget_set_visible(mainWindowW, FALSE);
+    gtk_window_present(GTK_WINDOW(simWindow));
+}
+
 static void activate(GtkApplication *app, gpointer user_data) {
+    (void)user_data;
     GtkBuilder *builder = gtk_builder_new_from_file("View/MMU.ui");
     
     GtkCssProvider * provider = gtk_css_provider_new();
@@ -746,6 +1008,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     widgets.btnDownload = GTK_WIDGET(gtk_builder_get_object(builder, "btnDownloadRandomFile"));
     
     widgets.btnStartSimulation = GTK_WIDGET(gtk_builder_get_object(builder, "btnStartSimulation"));
+    widgets.lblDirectory = file_label;
 
     ramOptArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramOptArea"));
     ramAlgArea = GTK_WIDGET(gtk_builder_get_object(builder, "ramAlgArea"));
@@ -761,12 +1024,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
         gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollOpt), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         gtk_widget_set_size_request(scrollOpt, 250, 300); 
         gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollOpt), tableOpt->widget);
+        pageTableAttachScroll(tableOpt, GTK_SCROLLED_WINDOW(scrollOpt));
         gtk_box_append(GTK_BOX(boxOpt), scrollOpt);
 
         GtkWidget *scrollAlg = gtk_scrolled_window_new();
         gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollAlg), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         gtk_widget_set_size_request(scrollAlg, 250, 300); 
         gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollAlg), tableAlg->widget);
+        pageTableAttachScroll(tableAlg, GTK_SCROLLED_WINDOW(scrollAlg));
         gtk_box_append(GTK_BOX(boxAlg), scrollAlg);
 
 
@@ -799,6 +1064,17 @@ static void activate(GtkApplication *app, gpointer user_data) {
     
 
     
+    {
+        GtkWidget *ramOptBox = ramOptArea ? gtk_widget_get_parent(ramOptArea) : NULL;
+        GtkWidget *ramAlgBox = ramAlgArea ? gtk_widget_get_parent(ramAlgArea) : NULL;
+        GtkWidget *simBox = GTK_WIDGET(gtk_builder_get_object(builder, "boxSimul"));
+        if (ramOptBox && ramAlgBox && simBox) {
+            buildSimWindow(app, window, ramOptBox, ramAlgBox, simBox);
+        } else {
+            g_printerr("No se encontraron los widgets de simulacion en el .ui\n");
+        }
+    }
+
     if(btnCreate){
         g_signal_connect(btnCreate, "clicked", G_CALLBACK(on_create_file_clicked), &widgets);
     }
@@ -815,6 +1091,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
     if (widgets.btnStartSimulation) {
         g_signal_connect(widgets.btnStartSimulation, "clicked", G_CALLBACK(on_start_simulation_button_clicked), &widgets);
     }
+
+    clearView();
+    updateButtons();
     
     if(widgets.btnDownload){
         gtk_widget_set_sensitive(widgets.btnDownload, FALSE);
@@ -833,6 +1112,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 int main(int argc, char **argv) {
     GtkApplication *app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+    g_signal_connect(app, "shutdown", G_CALLBACK(onAppShutdown), NULL);
     
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);

@@ -152,6 +152,32 @@ void updateStats(MMU * self) {
     self->thrashPct = self->elapsedTime > 0 ? self->thrashTime * 100.0 / self->elapsedTime : 0.0;
 }
 
+void mmuPlacePage(MMU * self, NodePage * page) {
+    for (int f = 0; f < self->frameCount; f++) {
+        if (self->frames[f] == NULL) {
+            self->frames[f] = page;
+            page->M_Address = f;
+            return;
+        }
+    }
+}
+
+void mmuReplacePage(MMU * self, NodePage * victim, NodePage * incoming) {
+    int f = victim->M_Address;
+    victim->M_Address = -1;
+    if (f >= 0 && f < self->frameCount) {
+        self->frames[f] = incoming;
+        incoming->M_Address = f;
+    }
+}
+
+void mmuReleasePage(MMU * self, NodePage * page) {
+    if (page->M_Address >= 0 && page->M_Address < self->frameCount) {
+        self->frames[page->M_Address] = NULL;
+    }
+    page->M_Address = -1;
+}
+
 int predictNew(MMU * self, int size) {
     if(self != NULL) {
         int numPages = size / self->pageSize + (size % self->pageSize != 0);
@@ -353,6 +379,7 @@ void deleteP(MMU * self, int ptr) {
     while (nodePage != NULL && nodePage->id != -2 && nodePage->L_Address == ptr) {
         if (nodePage->loaded == 1) {
             deleteSpecificElementQueue(self->MemoryRAM, nodePage->id);
+            mmuReleasePage(self, nodePage);
         }
         nodePage = getNextPtr(nodePage);
     }
@@ -374,6 +401,7 @@ void killP(MMU * self, int pid) {
         while (page != NULL && page->id != -2) {
             if (page->loaded == 1) {
                 deleteSpecificElementQueue(self->MemoryRAM, page->id);
+                mmuReleasePage(self, page);
             }
             if (page->L_Address == page->id) {
                 NodePage * symbol = popSymbolsTableElement(self->symbolsTable, page->L_Address);

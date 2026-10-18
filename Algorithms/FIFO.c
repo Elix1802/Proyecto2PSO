@@ -8,9 +8,10 @@
 
 void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int * ptrDiskAddr, MMU * mmu) {
     if (Memory->cantidad < mmu->frameCount) {
-        nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        mmuPlacePage(mmu, nodePage);
         mmu->elapsedTime += 5;
+        nodePage->loaded_T = mmu->elapsedTime;
         return;
     }
 
@@ -21,9 +22,10 @@ void insertionPageFIFO(Queue * Memory, NodePage * nodePage, DiskTable * diskTabl
     *ptrDiskAddr = (*ptrDiskAddr) + 1;
     mmu->unloaded++;
 
-    nodePage->M_Address = Memory->final;
+    mmuReplacePage(mmu, oldestNode, nodePage);
     enqueue(Memory, nodePage);
     mmu->elapsedTime += 5;
+    nodePage->loaded_T = mmu->elapsedTime;
 }
 
 void bringPageToMemoryFIFO(Queue * Memory, DiskTable * diskTable, int diskPos, int * ptrDiskAddr, MMU * mmu) {

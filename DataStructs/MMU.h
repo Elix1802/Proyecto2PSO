@@ -68,4 +68,7 @@ void printPredicts(MMU * self);
 void increaseFuturePredict(MMU * self);
 
 void updateStats(MMU * self);
+void mmuPlacePage(MMU * self, NodePage * page);
+void mmuReplacePage(MMU * self, NodePage * victim, NodePage * incoming);
+void mmuReleasePage(MMU * self, NodePage * page);
 #endif

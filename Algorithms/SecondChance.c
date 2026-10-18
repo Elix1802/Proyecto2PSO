@@ -5,9 +5,10 @@
 
 void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * diskTable, int * ptrDiskAddr, MMU * mmu) {
     if (Memory->cantidad < mmu->frameCount) {
-        nodePage->M_Address = Memory->final;
         enqueue(Memory, nodePage);
+        mmuPlacePage(mmu, nodePage);
         mmu->elapsedTime += 5;
+        nodePage->loaded_T = mmu->elapsedTime;
         return;
     }
 
@@ -22,9 +23,10 @@ void insertionPageSecondChance(Queue * Memory, NodePage * nodePage, DiskTable * 
             *ptrDiskAddr = (*ptrDiskAddr) + 1;
             mmu->unloaded++;
 
-            nodePage->M_Address = Memory->final;
+            mmuReplacePage(mmu, candidateNode, nodePage);
             enqueue(Memory, nodePage);
             mmu->elapsedTime += 5;
+            nodePage->loaded_T = mmu->elapsedTime;
             return;
         }
     }
