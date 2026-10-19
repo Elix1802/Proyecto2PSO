@@ -10,8 +10,6 @@
     <property name="title">MMU</property>
     <child>
       <object class="GtkScrolledWindow">
-        <property name="hscrollbar-policy">automatic</property>
-        <property name="vscrollbar-policy">automatic</property>
         <property name="child">
           <object class="GtkBox">
             <property name="margin-bottom">15</property>
@@ -105,16 +103,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkBox">
-                <child>
-                  <object class="GtkButton" id="btnStartSimulation">
-                    <property name="label">✅ Start Simulation</property>
-                    <style>
-                      <class name="btnCreateFile"/>
-                    </style>
-                  </object>
-                </child>
-              </object>
+              <object class="GtkBox"/>
             </child>
             <child>
               <object class="GtkSeparator"/>
@@ -159,6 +148,14 @@
                         </items>
                       </object>
                     </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="btnStartSimulation">
+                    <property name="label">✅ Start Simulation</property>
+                    <style>
+                      <class name="btnCreateFile"/>
+                    </style>
                   </object>
                 </child>
               </object>
@@ -212,9 +209,9 @@
                 <property name="spacing">20</property>
                 <child>
                   <object class="GtkBox">
+                    <property name="hexpand">false</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">10</property>
-                    <property name="hexpand">false</property>
                     <child>
                       <object class="GtkBox" id="boxMmuOpt">
                         <property name="hexpand">false</property>
@@ -222,16 +219,15 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox" id="boxStatsOpt">
-                      </object>
+                      <object class="GtkBox" id="boxStatsOpt"/>
                     </child>
                   </object>
                 </child>
                 <child>
                   <object class="GtkBox">
+                    <property name="hexpand">false</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">10</property>
-                    <property name="hexpand">false</property>
                     <child>
                       <object class="GtkBox" id="boxMmuAlg">
                         <property name="hexpand">false</property>
@@ -239,8 +235,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox" id="boxStatsAlg">
-                      </object>
+                      <object class="GtkBox" id="boxStatsAlg"/>
                     </child>
                   </object>
                 </child>
@@ -248,6 +243,8 @@
             </child>
           </object>
         </property>
+        <property name="hscrollbar-policy">automatic</property>
+        <property name="vscrollbar-policy">automatic</property>
       </object>
     </child>
   </object>
