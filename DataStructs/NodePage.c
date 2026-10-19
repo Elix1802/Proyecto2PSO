@@ -70,7 +70,7 @@ void bringFromDisk(NodePage * self) {
     }
 }
 
-void addTimeOnNodePage(NodePage * self, int time) {
+void addTimeOnNodePage(NodePage * self) {
     if(self!=NULL) {
         self->loaded_T++;
     }
