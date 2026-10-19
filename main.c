@@ -51,9 +51,7 @@ static gboolean onSimTick(gpointer data){
         simTimer = 0;
         simState = SIM_DONE;
         if(currentSim != NULL){
-            printf("FIN: OPT t=%d thrash=%.1f%% | ALG t=%d thrash=%.1f%%\n",
-                   currentSim->opt->elapsedTime, currentSim->opt->thrashPct,
-                   currentSim->alg->elapsedTime, currentSim->alg->thrashPct);
+
             fflush(stdout);
         }
         onSimFinished();
@@ -504,7 +502,6 @@ static void on_create_file_clicked(GtkButton *button, gpointer user_data) {
     GtkAlertDialog *alert = gtk_alert_dialog_new("✅ File created and ready to download");
     gtk_alert_dialog_show(alert, parent_window);
     g_object_unref(alert);
-    printf("Archivo generado: %s (semilla: %u, P=%d, N=%d)\n", fileName, seed, P, N);
 
 }
 
